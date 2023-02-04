@@ -1,0 +1,33 @@
+    1  pwd
+    2  cd ~
+    3  pwd
+    4  cd Desktop/
+    5  pwd
+    6  cd ~
+    7  pwd
+    8  cd Desktop/
+    9  ls -latr ; mkdir cs149 ; cd cs149
+   10  git init
+   11  sudo apt install git
+   12  git remote add origin https://github.com/yitan02/cs149.git
+   13  git init
+   14  git remote add origin https://github.com/yitan02/cs149.git
+   15  git config --global user.email "yingtan114@gmail.com"
+   16  git config --global user.name "yinglin"
+   17  mkdir WS1
+   18  cd WS1
+   19  git add .
+   20  ls -latr
+   21  history > cmds.log
+   22  git commit -m "First commit" -a
+   23  git branch
+   24  git add cmds.log *.c
+   25  sudo apt install kate
+   26  kate 1.15LAB.c
+   27  git add 1.15LAB.c
+   28  git commit -m "First commit, adding 1.15 lab"
+   29  git branch
+   30  git push -u origin master
+   31  yitan02
+   32  git push -u origin master
+   33  history > cmds.log
