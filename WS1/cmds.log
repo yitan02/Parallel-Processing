@@ -31,3 +31,31 @@
    31  yitan02
    32  git push -u origin master
    33  history > cmds.log
+   34  git add cmds.log
+   35  git status
+   36  git commit -m "Adding log file"
+   37  git push -u origin master
+   38  kate 1.16LAB.c
+   39  kate 1.17LAB.c
+   40  kate 1.18LAB.c
+   41  kate 1.19LAB.c
+   42  kate 1.20LAB.c
+   43  git status
+   44  git add *.c
+   45  git status
+   46  git commit -m "Added lab files"
+   47  history > cmds.log
+   48  git push -u origin master
+   49  kate 1.15LAB.c
+   50  kate 1.16LAB.c
+   51  kate 1.15LAB.c
+   52  kate 1.17LAB.c
+   53  kate 1.18LAB.c
+   54  kate 1.19LAB.c
+   55  kate 1.20LAB.c
+   56  kate 1.19LAB.c
+   57  kate 1.18LAB.c
+   58  kate 1.17LAB.c
+   59  kate 1.16LAB.c
+   60  kate 1.15LAB.c
+   61  history > cmds.log
