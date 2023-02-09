@@ -29,3 +29,18 @@
    29  mkdir WS2
    30  cd WS2
    31  history > worksheet2.log
+   32  cat worksheet2.log
+   33  kate 2.25Lab.c
+   34  git status
+   35  git add *.c
+   36  git status
+   37  git add worksheet2.log
+   38  git status
+   39  git commit -m "Adding first lab and log file"
+   40  git push -u origin master
+   41  kate 2.29Lab.c
+   42  kate 2.32Lab.c
+   43  kate 2.34Lab.c
+   44  kate 3.22Lab.c
+   45  git status
+   46  history > worksheet2.log
