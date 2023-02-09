@@ -1,0 +1,31 @@
+    1  date
+    2  pwd
+    3  cd ~
+    4  cd Desktop/
+    5  ls -latr
+    6  mkdir ws2
+    7  cd ws2
+    8  ls -latr
+    9  echo $?
+   10  man ps
+   11  ps aux
+   12  top
+   13  history > worksheet2.log
+   14  head worksheet2.log
+   15  tail worksheet2.log
+   16  cat worksheet2.log
+   17  kate 2.25Lab.c
+   18  kate 2.29Lab.c
+   19  kate 2.32Lab.c
+   20  kate 2.34Lab.c
+   21  kate 3.22Lab.c
+   22  git status
+   23  ls
+   24  cd ..
+   25  git init
+   26  git clone https://github.com/yitan02/cs149.git
+   27  cd cs149
+   28  ls
+   29  mkdir WS2
+   30  cd WS2
+   31  history > worksheet2.log
