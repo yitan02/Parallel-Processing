@@ -1,4 +1,4 @@
- cd Desktop/cs149/WS3
+  621  cd Desktop/cs149/WS3
   622  kate 4.14Lab.c
   623  kate 4.16Lab.c
   624  kate 5.16Lab.c
@@ -28,3 +28,25 @@
   648  kate 5.23Lab.c
   649  kate 5.22Lab.c
   650  history
+  651  cat > worksheet3.log
+  652  cat worksheet3.log
+  653  ls
+  654  git status
+  655  git 5.18Lab.c 5.21Lab.c 5.22Lab.c 5.23Lab.c
+  656  git add 5.18Lab.c 5.21Lab.c 5.22Lab.c 5.23Lab.c
+  657  git status
+  658  git add worksheet3.log
+  659  git commit -m "Adding remaining labs and log file"
+  660  git push -u origin master
+  661  git pull
+  662  git status
+  663  git push -u origin master
+  664  cd ..
+  665  git clone https://github.com/yitan02/cs149.git
+  666  cd cs149
+  667  cd WS3
+  668  ls
+  669  git status
+  670* 
+  671  git push -u origin master
+  672  history
