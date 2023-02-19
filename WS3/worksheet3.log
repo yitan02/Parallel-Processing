@@ -1,0 +1,30 @@
+ cd Desktop/cs149/WS3
+  622  kate 4.14Lab.c
+  623  kate 4.16Lab.c
+  624  kate 5.16Lab.c
+  625  kate 5.17Lab.c
+  626  git status
+  627  ls
+  628  git add 4.14Lab.c
+  629  git 4.16Lab.c 
+  630  git add 4.16Lab.c
+  631  git add 5.16Lab.c
+  632  git add 5.17Lab.c
+  633  history > worksheet3.log
+  634  cat worksheet3.log
+  635  git commit -m "adding lab files"
+  636  git push -u origin master
+  637  cd ..
+  638  cd A1
+  639  kate countnames.c
+  640  cd Desktop
+  641  cd cs149/A1
+  642  kate countnames.c
+  643  cd ..
+  644  cd WS3
+  645  kate 5.18Lab.c
+  646  kate 5.21Lab.c
+  647  kate 5.22Lab.c
+  648  kate 5.23Lab.c
+  649  kate 5.22Lab.c
+  650  history
