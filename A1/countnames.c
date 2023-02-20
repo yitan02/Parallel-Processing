@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     int j = 0; // names array tracker
 
     //read file and update name array and counter array accordingly
-    while (fgets(current_line, 30, names_file) != NULL && line_count <= 99){
+    while (fgets(current_line, 30, names_file) != NULL){
         //check if current name is found or not
         for (int i = 0; i < 100; i++){
             //case 1: name found
