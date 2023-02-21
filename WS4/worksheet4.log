@@ -1,0 +1,8 @@
+740  cd Desktop
+  741  cd cs149
+  742  ls
+  743  mkdir WS4
+  744  cd WS4
+  745  kate 6.20Lab.c
+  746  kate 6.30Lab.c
+  747  history
