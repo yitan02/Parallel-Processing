@@ -50,3 +50,17 @@
   670* 
   671  git push -u origin master
   672  history
+  ...
+  721  wget https://github.com/torvalds/linux/archive/master.zip
+  722  unzip master.zip
+  723  cd linux-master
+  724  pwd
+  725  alias l='ls -latr'
+  726  l
+  727  find . -name mem.c
+  728  find. -name mem.c | xargs head
+  729  find . -name mem.c | xargs head
+  730  find . -name mem.c | xargs grep 86
+  731  cd ..
+  732  head worksheet3.log
+  733  history
