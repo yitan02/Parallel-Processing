@@ -1,3 +1,11 @@
+/**
+ * Description: This program counts the amount of unique names in a file.
+ * Author names: Talia Syed, Yinglin Tan
+ * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
+ * Last modified date: 2/20/23
+ * Creation date: 2/13/23
+ **/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -7,10 +15,8 @@
  * Read the names listed in a file and print out the frequency of each name
  * assumptions: file has only one name per line; file only has names
  * input: file of names
- * output: list of all names and number of occurrences of each
+ * output: list of all names and number of occurrences of each and empty line warnings
 **/
-
-//int name_count(){}
 int main(int argc, char *argv[])
 {
     //if user passes either only 1 argument or more than 2 arguments, print stderror and exit as 2
@@ -23,7 +29,7 @@ int main(int argc, char *argv[])
 
     //if file doesn't exist, print error message and exit as 1
     if (names_file == NULL){
-        printf("Error, file not found!\n");
+        printf("Error: cannot open file.\n");
         exit(1);
     }
 
@@ -83,21 +89,21 @@ int main(int argc, char *argv[])
     while(k < 100){
         // if line was not empty and had a name, print name and count
        if(names_count[k] != 0){
-            //print out name
-           int n = 0;
+           int n = 0; //variable to print the names
+           //print out the name character by character
            while(names[k][n] != '\n'){
                printf("%c", names[k][n]);
                n++;
            }
+           //print the occurences of the name
            printf(": %d\n", names_count[k]);
        }
-//        if (empty_line_tracker[k] != 0){
-//            fprintf(stderr, "Warning - Line %d is empty.\n", k + 1);
-//        }
        k++;
     }
 
+    //print out the warnings for empty lines in the file
     for (int i = 0; i < 100; i++){
+      //prints only if the value of the element in the empty_line_tracker array is not 0
       if (empty_line_tracker[i] != 0){
            fprintf(stderr, "Warning - Line %d is empty.\n", i + 1);
        }
