@@ -1,4 +1,4 @@
-740  cd Desktop
+  740  cd Desktop
   741  cd cs149
   742  ls
   743  mkdir WS4
@@ -6,3 +6,23 @@
   745  kate 6.20Lab.c
   746  kate 6.30Lab.c
   747  history
+  .....
+  741  wget http://www.apuebook.com/src.3e.tar.gz
+  742  gunzip src.3e.tar.gz
+  743  tar xvf src.3e.tar
+  744  cd apue.3e
+  745  cd proc
+  746  make all
+  747  ./fork1
+  748  ./fork2
+  749  cd ..
+  750  pwd
+  751  pstree
+  752  ps -a -f -x
+  753  ps -a -f -x | more
+  754  top
+  755  man kill
+  756  echo $?
+  757  echo $$
+  758  tail worksheet4.log
+  759  history
