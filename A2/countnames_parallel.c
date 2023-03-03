@@ -10,6 +10,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+/**
+ * Checklist:
+ * fix all compiler erors
+ * figure out how to transfer array data from each individual child into total
+ * figure out how pipes work
+ * how to access struct array?
+ * how to keep track of empty lines in a file
+ */
 
 /**
  * Read the names listed in a child file, update parent file, and print out the frequency of each name
@@ -17,23 +28,24 @@
  * input: file of names
  * output: list of all names and number of occurrences of each and empty line warnings
 **/
+#define MAX_NAMES 100
+typedef struct my_data {
+  char name[30];
+  int count;
+} my_data;
+
+
 int main(int argc, char *argv[])
 {
+    //declare total namecounts
+    my_data namecounts[100]={{{'\0', 0}}};
+
     //if user passes only 1 argument, print stderror and exit as 2
     if (argc == 1) {
-        fprintf(stderr, "Error! Expected Format: ./abc <filename> \n");
+        fprintf(stderr, "Error! At least one file is needed\n");
         exit(2);
     }
 
-    #define MAX_NAMES 100
-    typedef struct my_data {
-        char total_name[30];
-        int total_count;
-    } my_data;
-    my_data namecounts[MAX_NAMES]={ { '\0', 0 } };
-
-    //write end of pipe:
-    //MAX_NAMES*sizeof(my_data)
 
     //spawn a child process for each file
     for(int i = 0; i < argc; i++)
@@ -44,7 +56,7 @@ int main(int argc, char *argv[])
         pid_t child;
 
         //checks if pipes failed to initialize
-        if (pipe(pipe1) == -1) || pipe(pipe2) == -1){
+        if ((pipe(pipe1) == -1) || (pipe(pipe2) == -1)){
              fprintf(stderr, "Pipe failed to initialize");
              exit(1);
         }
@@ -60,6 +72,12 @@ int main(int argc, char *argv[])
         else if (child == 0){
             //close writing end of pipe1
             close(pipe1[1]);
+
+            // read while EOF
+//             while (read(pipe1[0], &buf, 1) > 0){
+//                 write(1, &buf, 1);
+//             }
+//             write(1, "\n", 1);
 
             FILE* names_file  = fopen(argv[i], "r"); //open file mentioned in command line
 
@@ -104,7 +122,8 @@ int main(int argc, char *argv[])
                 if (name_found == 0){
                 //case 1: line is empty; if line is empty, update line counter array
                     if(current_line[0] == '\n' || (current_line[0] == ' ' && current_line[1] == '\n')){
-                        empty_line_tracker[line_count] = 1;
+                        //empty_line_tracker[line_count] = 1;
+                        printf("Warning -file %s line %d is empty.\n", argv[i], line_count + 1);
                     }
                 // case 2 : name is not in array yet, so add into next empty spot in names array
                     else{
@@ -115,24 +134,6 @@ int main(int argc, char *argv[])
                 }
                 name_found = 0; //reset boolean to false
                 line_count++; //increment line
-            }
-
-            int k = 0; //counter for names and empty line tracker
-
-            //read the arrays and display the names and their count while both names and empty line array are not empty
-            while(k < MAX_NAMES){
-            // if line was not empty and had a name, print name and count
-                if(names_count[k] != 0){
-                    int n = 0; //variable to print the names
-                    //print out the name character by character
-                    while(names[k][n] != '\n'){
-                        printf("%c", names[k][n]);
-                        n++;
-                    }
-                //print the occurences of the name
-                printf(": %d\n", names_count[k]);
-                }
-                k++;
             }
 
             //print out the warnings for empty lines in the file
@@ -150,13 +151,42 @@ int main(int argc, char *argv[])
             close(pipe1[0]);
             close(pipe2[0]);
 
-
+            exit(0);
         }
         //figure out how to copy data from child to parent
-        //need to do parent process still
+
+        else{ /* parent process */
+           my_data temp_namecounts[MAX_NAMES]={0};
+
+           close(pipe1[0]); // close the read-end of the pipe
+           write(pipe1[1], namecounts, MAX_NAMES*sizeof(my_data)); // write the content of argv[1] to the reader
+           close(pipe1[1]); // close the write-end of the pipe
+           wait(NULL); // wait for the child process to exit
+           close(pipe2[1]);
+           read(pipe2[0], &temp_namecounts, MAX_NAMES*sizeof(my_data));
+           //add occurrences of names to total count
+           close(pipe2[0]);
+           exit(0);
+        }
+
 
     }
-
+    int k = 0; //counter for names and empty line tracker
+    //read the arrays and display the names and their count while both names and empty line array are not empty
+    while(k < MAX_NAMES){
+        // if line was not empty and had a name, print name and count
+            if(namecounts[k].count != 0){
+                int n = 0; //variable to print the names
+                //print out the name character by character
+                    while(namecounts[k].name[n] != '\n'){
+                        printf("%c", namecounts[k].name[n]);
+                        n++;
+                    }
+                //print the occurences of the name
+                printf(": %d\n", namecounts[k].count);
+                }
+                k++;
+    }
     //exit as 0
     exit(0);
 }
