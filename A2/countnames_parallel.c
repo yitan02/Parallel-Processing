@@ -2,7 +2,7 @@
  * Description: This program counts the amount of unique names across multiple file.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 2/26/23
+ * Last modified date: 3/2/23
  * Creation date: 2/26/23
  **/
 
@@ -24,6 +24,16 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error! Expected Format: ./abc <filename> \n");
         exit(2);
     }
+
+    #define MAX_NAMES 100
+    typedef struct my_data {
+        char total_name[30];
+        int total_count;
+    } my_data;
+    my_data namecounts[MAX_NAMES]={ { '\0', 0 } };
+
+    //write end of pipe:
+    //MAX_NAMES*sizeof(my_data)
 
     //spawn a child process for each file
     for(int i = 0; i < argc; i++)
@@ -70,9 +80,9 @@ int main(int argc, char *argv[])
                 fseek(names_file, 0, SEEK_SET); //go back to top of file
             }
 
-            char names[100][30] = {0}; //declare array to hold names
-            int names_count[100] = {}; //declare array to hold count of names and initialize each cell as 0
-            int empty_line_tracker[100] = {}; //declare array to track empty lines and initialize each cell as 0
+            char names[MAX_NAMES][30] = {0}; //declare array to hold names
+            int names_count[MAX_NAMES] = {}; //declare array to hold count of names and initialize each cell as 0
+            int empty_line_tracker[MAX_NAMES] = {}; //declare array to track empty lines and initialize each cell as 0
             char current_line[30]; //declare array to hold contents of current line in buffer
             bool name_found = 0; //0 for false; 1 for true
             int line_count = 0; // keeps track of line
@@ -81,7 +91,7 @@ int main(int argc, char *argv[])
             //read file and update name array and counter array accordingly
             while (fgets(current_line, 30, names_file) != NULL){
                 //check if current name is found or not
-                for (int i = 0; i < 100; i++){
+                for (int i = 0; i < MAX_NAMES; i++){
                     //case 1: name found
                     //if name found, increment the name count accordingly in the array
                     if (strcmp (current_line, names[i]) == 0){
@@ -110,7 +120,7 @@ int main(int argc, char *argv[])
             int k = 0; //counter for names and empty line tracker
 
             //read the arrays and display the names and their count while both names and empty line array are not empty
-            while(k < 100){
+            while(k < MAX_NAMES){
             // if line was not empty and had a name, print name and count
                 if(names_count[k] != 0){
                     int n = 0; //variable to print the names
@@ -126,7 +136,7 @@ int main(int argc, char *argv[])
             }
 
             //print out the warnings for empty lines in the file
-            for (int i = 0; i < 100; i++){
+            for (int i = 0; i < MAX_NAMES; i++){
                 //prints only if the value of the element in the empty_line_tracker array is not 0
                 if (empty_line_tracker[i] != 0){
                     fprintf(stderr, "Warning - Line %d is empty.\n", i + 1);
@@ -146,7 +156,6 @@ int main(int argc, char *argv[])
         //need to do parent process still
 
     }
-
 
     //exit as 0
     exit(0);
