@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
           exit(1);
         }
         else if (child == 0){
-            //close writing end of pipe1
-            close(pipe1[1]);
+            //close reading end of pipe1
+            close(pipe1[0]);
             //close(pipe2[1]);
 
             my_data child_namescount[MAX_NAMES] = {{{'\0', 0 }}};
@@ -110,7 +110,12 @@ int main(int argc, char *argv[])
             int j = 0; // names array tracker
 
             //read file and update name array and counter array accordingly
-            while (fgets(current_line, 30, names_file) != NULL){
+            while (fgets(current_line, MAX_LEN, names_file) != NULL){
+                //replace newLine with null
+//                 if(current_line[strlen(current_line) - 1] == '\n'){
+//                     current_line[strlen(current_line) - 1] = '0';
+//                 }
+
                 //check if current name is found or not
                 for (int i = 0; i < MAX_NAMES; i++){
                     //case 1: name found
@@ -149,8 +154,6 @@ int main(int argc, char *argv[])
 
             //close file
             fclose(names_file);
-
-            printf("size of my data: %ld\n", sizeof(my_data));
 
             //write the names and names_count array to the pipe
             if(write(pipe1[1], child_namescount, MAX_NAMES * sizeof(my_data)) < 0){
