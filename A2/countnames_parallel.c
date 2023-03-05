@@ -2,7 +2,7 @@
  * Description: This program counts the amount of unique names across multiple file.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 3/2/23
+ * Last modified date: 3/4/23
  * Creation date: 2/26/23
  **/
 
@@ -12,15 +12,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
-/**
- * Checklist:
- * fix all compiler erors
- * figure out how to transfer array data from each individual child into total
- * figure out how pipes work
- * how to access struct array?
- * how to keep track of empty lines in a file
- */
 
 /**
  * Read the names listed in a child file, update parent file, and print out the frequency of each name
@@ -36,6 +27,8 @@ typedef struct my_data {
 } my_data;
 my_data namecounts[100]={{{'\0', 0}}};
 my_data temp_countnames[MAX_NAMES] = {{{'\0', 0}}};
+
+int namecounts_counter = 0;
 
 int main(int argc, char *argv[])
 {
@@ -58,7 +51,6 @@ int main(int argc, char *argv[])
     //spawn a child process for each file
     for(int i = 1; i < argc; i++)
     {
-        printf("%s\n", argv[i]);
         // argv[i] is the argument at index i
         pid_t child;
 
@@ -112,19 +104,14 @@ int main(int argc, char *argv[])
 
             //read file and update name array and counter array accordingly
             while (fgets(current_line, MAX_LEN, names_file) != NULL){
-                //replace newLine with null
-                if(current_line[strlen(current_line) - 1] == '\n'){
-                    current_line[strlen(current_line) - 1] = '\0';
-                }
 
-                printf("current line : %s\n", current_line);
 
                 //check if current name is found or not
                 for (int i = 0; i < MAX_NAMES; i++){
                     //case 1: name found
                     //if name found, increment the name count accordingly in the array
-                    if (strcmp (current_line, namecounts[i].name) == 0){
-                        namecounts[i].count++;
+                    if (strcmp (current_line, temp_countnames[i].name) == 0){
+                        temp_countnames[i].count++;
                         name_found = 1;
                     }
                 }
@@ -132,14 +119,19 @@ int main(int argc, char *argv[])
                 //if name is not found, either line is empty or has a new name
                 if (name_found == 0){
                 //case 1: line is empty; if line is empty, update line counter array
-                    if(current_line[0] == '\0' || (current_line[0] == ' ' && current_line[1] == '\0')){
+                    if(current_line[0] == '\n' || (current_line[0] == ' ' && current_line[1] == '\n')){
                         //empty_line_tracker[line_count] = 1;
+
                         printf("Warning -file %s line %d is empty.\n", argv[i], line_count + 1);
                     }
                 // case 2 : name is not in array yet, so add into next empty spot in names array
                     else{
-                        strcpy(namecounts[j].name, current_line);
-                        namecounts[j].count++;
+                        //replace newLine with null
+                        if(current_line[strlen(current_line) - 1] == '\n'){
+                            current_line[strlen(current_line) - 1] = '\0';
+                        }
+                        strcpy(temp_countnames[j].name, current_line);
+                        temp_countnames[j].count++;
                         j++;
                     }
                 }
@@ -151,7 +143,7 @@ int main(int argc, char *argv[])
             fclose(names_file);
 
             //write the names and names_count array to the pipe
-            if(write(pipe1[1], namecounts, MAX_NAMES * sizeof(my_data)) < 0){
+            if(write(pipe1[1], temp_countnames, MAX_NAMES * sizeof(my_data)) < 0){
                 fprintf(stderr, "failed to write names to pipe\n");
             }
 
@@ -165,7 +157,9 @@ int main(int argc, char *argv[])
 
             exit(0);
         }
-            /* parent process */
+
+
+    /* parent process */
     while(wait(NULL) > 0){
 //            char temp_name[MAX_NAMES][MAX_LEN] = {0};
 //            int temp_count[MAX_LEN] = {};
@@ -173,29 +167,29 @@ int main(int argc, char *argv[])
 
            close(pipe1[1]); // close the write-end of the pipe
            //close(pipe2[1]);
-           read(pipe1[0], temp_countnames, MAX_NAMES * sizeof(my_data)); // write the content of argv[1] to the reader
+           read(pipe1[0], temp_countnames, MAX_NAMES * sizeof(my_data)); // write the content of argv[i] to the reader
            //read(pipe2[0], temp_count, MAX_LEN); // write to temp_count
 
-           for(int a = 0; a < MAX_NAMES; a++){
+           for(int a = 0; a < MAX_NAMES && temp_countnames[a].name[0] != '\0'; a++){
               for(int b = 0; b < MAX_NAMES; b++){
+
                 //case 1: name found
                 //if name found, increment the name count accordingly in the array
-                if (strcmp (temp_countnames[a].name, namecounts[b].name) == 0){
+                if ((strcmp (temp_countnames[a].name, namecounts[b].name) == 0) && (namecounts[b].name[0] != '\0') && (temp_countnames[a].name[0] != '\0')){
                     namecounts[b].count++;
                     temp_name_found = 1;
 
                 }
               }
-
               //if name is not found, either line is empty or has a new name
               if (temp_name_found == 0){
                 // case 1 : name is not in array yet, so add into next empty spot in names array
-                    strcpy(namecounts[a].name, temp_countnames[a].name);
-                    namecounts[a].count++;
-                }
+                    strcpy(namecounts[namecounts_counter].name, temp_countnames[a].name);
+                    namecounts[namecounts_counter].count++;
+                    namecounts_counter++;
+              }
               temp_name_found = 0; //reset boolean to false
             }
-
 
            close(pipe1[0]);
            //close(pipe2[0]);
@@ -203,7 +197,7 @@ int main(int argc, char *argv[])
 
     }
 
-    for(int z = 0; z < 3; z++){
+    for(int z = 0; z < MAX_NAMES && namecounts[z].name[0] != '\0'; z++){
         printf("%s : %d\n", namecounts[z].name, namecounts[z].count);
 
     }
