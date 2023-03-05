@@ -104,8 +104,6 @@ int main(int argc, char *argv[])
 
             //read file and update name array and counter array accordingly
             while (fgets(current_line, MAX_LEN, names_file) != NULL){
-
-
                 //check if current name is found or not
                 for (int i = 0; i < MAX_NAMES; i++){
                     //case 1: name found
@@ -117,11 +115,9 @@ int main(int argc, char *argv[])
                 }
 
                 //if name is not found, either line is empty or has a new name
-                if (name_found == 0){
+                if (name_found == 0 && j < 100){
                 //case 1: line is empty; if line is empty, update line counter array
                     if(current_line[0] == '\n' || (current_line[0] == ' ' && current_line[1] == '\n')){
-                        //empty_line_tracker[line_count] = 1;
-
                         printf("Warning -file %s line %d is empty.\n", argv[i], line_count + 1);
                     }
                 // case 2 : name is not in array yet, so add into next empty spot in names array
@@ -138,9 +134,11 @@ int main(int argc, char *argv[])
                 name_found = 0; //reset boolean to false
                 line_count++; //increment line
             }
-
             //close file
             fclose(names_file);
+
+            printf("temp count names at 0: %d\n", temp_countnames[0].count);
+
 
             //write the names and names_count array to the pipe
             if(write(pipe1[1], temp_countnames, MAX_NAMES * sizeof(my_data)) < 0){
@@ -166,9 +164,7 @@ int main(int argc, char *argv[])
            bool temp_name_found = 0;
 
            close(pipe1[1]); // close the write-end of the pipe
-           //close(pipe2[1]);
            read(pipe1[0], temp_countnames, MAX_NAMES * sizeof(my_data)); // write the content of argv[i] to the reader
-           //read(pipe2[0], temp_count, MAX_LEN); // write to temp_count
 
            for(int a = 0; a < MAX_NAMES && temp_countnames[a].name[0] != '\0'; a++){
               for(int b = 0; b < MAX_NAMES; b++){
@@ -197,26 +193,12 @@ int main(int argc, char *argv[])
 
     }
 
+
+
     for(int z = 0; z < MAX_NAMES && namecounts[z].name[0] != '\0'; z++){
         printf("%s : %d\n", namecounts[z].name, namecounts[z].count);
 
     }
-
-    //printf("%s and %d \n", namecounts[2].name, namecounts[2].count);
-
-     //int k = 0; //counter for names and empty line tracker
-    //read the arrays and display the names and their count while both names and empty line array are not empty
-//     while(k < MAX_NAMES && namecounts[k].count != 0){
-//         int d = 0; //variable to print the names
-//         //print out the name character by character
-//         while(namecounts[k].name[d] != '\n'){
-//             printf("%c", namecounts[k].name[d]);
-//             d++;
-//         }
-//         //print the occurences of the name
-//         printf(": %d\n", namecounts[k].count);
-//         k++;
-//     }
 
     //exit as 0
     exit(0);
