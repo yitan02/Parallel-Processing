@@ -20,8 +20,11 @@
 int main(void){
     pid_t child; //initialize pid
 
-    //fork two times using for loop
-    for(int i = 0; i < 2; i++){
+    //print parent pid
+    printf("hello world from PID %d!\n", (int) getpid());
+
+    //fork to create child processes
+    for(int i = 0; i < 3; i++){
         child = fork();
 
         //check if fork did not work
@@ -35,11 +38,6 @@ int main(void){
             printf("hello world from PID %d!\n", (int) getpid());
             exit(0);
         }
-    }
-
-    //parent process
-    while(wait(NULL) > 0){
-        printf("hello world from PID %d!\n", (int) getpid());
     }
 
     exit(0);
