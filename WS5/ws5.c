@@ -2,7 +2,7 @@
  * Description: Program to use fork to print out statement 4 times.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 3/2/23
+ * Last modified date: 3/5/23
  * Creation date: 3/2/23
  **/
 
@@ -30,17 +30,16 @@ int main(void){
             fprintf(stderr, "fork failed\n");
             exit(1);
         }
-
         //child process
         else if (child == 0){
             printf("hello world from PID %d!\n", (int) getpid());
             exit(0);
         }
-        //parent process
-        else{
-            wait(NULL);
-            printf("hello world from PID %d!\n", (int) getpid());
-        }
+    }
+
+    //parent process
+    while(wait(NULL) > 0){
+        printf("hello world from PID %d!\n", (int) getpid());
     }
 
     exit(0);
