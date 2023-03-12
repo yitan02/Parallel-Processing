@@ -2,7 +2,7 @@
  * Description: This program executes multiple commands.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 3/10/23
+ * Last modified date: 3/11/23
  * Creation date: 3/10/23
  **/
 
@@ -42,12 +42,20 @@ int main(int argc, char *argv[]){
         fseek(cmd_fp, 0, SEEK_SET); //go back to top of file
     }
 
-    char commands[MAX_CHAR][MAX_LEN]; //array to store commands
-    char current_line[MAX_LEN]; //array to store current line read
-    int line_count = 0; //counter for line count
 
+    while(fgets(current_line, MAX_LEN, cmd_fp) != -1 && line_count < MAX_CHAR){
+        //char commands[MAX_LEN] = {0}; //array to store commands
+        char current_line[MAX_LEN]; //array to store current line read
+        int line_count = 0; //counter for line count
+        int cmd_count = 0;
 
-    while(fgets(current_line, MAX_LEN, cmd_fp) != NULL){
+        //convert to C string
+        if (current_line[strlen(current_line) - 1] == '\n'){
+            current_line[strlen(current_line) - 1] = '\0';
+        }
+
+        cmd_count++;
+
         pid_t child; //declare child pid
 
         child = fork();
@@ -59,8 +67,23 @@ int main(int argc, char *argv[]){
         }
         //child process
         else if (child == 0){
-            char output_file[30]; // array to hold stdout
-            char error_file[30]; // array to hold stderr
+            //split current line into parts by words
+            char *argument[MAX_LEN + 1];
+            char *word = strtok(current_line, " ");
+            int counter = 0;
+
+            //separate each word based on space
+            while(word != NULL && counter < MAX_LEN - 1){
+                argument[counter] = word;
+                counter++;
+                word = strtok(NULL, " ");
+            }
+            argument[counter] = NULL;
+
+            printf("Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
+
+            char output_file[MAX_LEN]; // array to hold stdout
+            char error_file[MAX_LEN]; // array to hold stderr
 
             //push the logs to their respective files
             sprintf(output_file, "%d.out", (int) getpid());
@@ -117,6 +140,9 @@ int main(int argc, char *argv[]){
     //should we read in the entire input into array and then call child processes
     //or should we go line by line and call child processes for every line?
     //should we go line by line after while or inside the while?
+    //how to check if file is txt file or actual intput?
+    //pass current line to buffer?
+    //how to separate string into parts? (need to google)
 
 
     return 0;
