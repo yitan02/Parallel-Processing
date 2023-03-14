@@ -1,0 +1,11 @@
+ 1341  cd Desktop/cs149/WS7
+ 1342  ls | wc
+ 1343  ls | sort
+ 1344  ls | sort | wc
+ 1345  ls -latr .bin > a.out
+ 1346  ls -latr /bin/ > a.out
+ 1347  cat a.out
+ 1348  strace ls
+ 1349  du -sh .
+ 1350  df -i
+ 1351  history
