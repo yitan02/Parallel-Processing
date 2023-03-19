@@ -2,7 +2,7 @@
  * Description: This program executes multiple commands.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 3/11/23
+ * Last modified date: 3/19/23
  * Creation date: 3/10/23
  **/
 
@@ -93,11 +93,9 @@ int main(int argc, char *argv[]){
             }
             argument[counter] = NULL;
 
-            for(int k = 0; k < 10;k++){
-                printf("in argument: %s\n", argument[k]);
-            }
-
-            fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
+//             for(int k = 0; k < 10;k++){
+//                 printf("in argument: %s\n", argument[k]);
+//             }
 
             char output_file[MAX_LEN]; // array to hold stdout
             char error_file[MAX_LEN]; // array to hold stderr
@@ -114,7 +112,8 @@ int main(int argc, char *argv[]){
             dup2(fd_1, 1);
             dup2(fd_2, 2);
 
-            printf("log file done\n");
+            fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
+
             fflush(stdout);
 
             //check if execvp ran properly
@@ -127,8 +126,6 @@ int main(int argc, char *argv[]){
 
         //parent process
         while((child = wait(&status)) > 0){
-            printf("start of parent\n");
-
             char output_file[MAX_LEN] = {0}; // array to hold stdout
             char error_file[MAX_LEN] = {0}; // array to hold stderr
 
@@ -136,9 +133,8 @@ int main(int argc, char *argv[]){
             sprintf(output_file, "%d.out", child);
             sprintf(error_file, "%d.err", child);
 
-            printf("sprintf done\n");
-
             //open log files
+            //send fd_1 to PID.out file and fd_2 to PID.err for the PID
             int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
             dup2(fd_1, 1);
 
@@ -146,12 +142,6 @@ int main(int argc, char *argv[]){
 
             int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
             dup2(fd_2, 2);
-
-            printf("open log files done\n");
-
-            //send fd_1 to PID.out file and fd_2 to PID.err for the PID
-
-            printf("parent: log file done\n");
 
             //if process exited normally
             if (WIFEXITED(status)) {
