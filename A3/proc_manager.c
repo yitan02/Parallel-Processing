@@ -11,7 +11,6 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -19,7 +18,12 @@
 #define MAX_CHAR 100
 #define MAX_LEN 30
 
-
+/**
+ * Read from stdin and run the commands in parallel
+ * assumptions: there is at least one line of command
+ * input: commands
+ * output: command results in output and error file
+**/
 int main(int argc, char *argv[]){
 
     int status; //declare status
@@ -27,9 +31,10 @@ int main(int argc, char *argv[]){
 
     char current_line[MAX_LEN]; //array to store current line read
     int line_count = 0; //counter for line count
-    int cmd_count = 0;
+    int cmd_count = 0; //counter for the amount of commands
 
-        while(fgets(current_line, MAX_LEN, stdin) && line_count < MAX_CHAR){
+    //while loop reads from stdin/terminal input
+    while(fgets(current_line, MAX_LEN, stdin) && line_count < MAX_CHAR){
         //convert to C string
         if (current_line[strlen(current_line) - 1] == '\n'){
             current_line[strlen(current_line) - 1] = '\0';
@@ -37,6 +42,7 @@ int main(int argc, char *argv[]){
 
         cmd_count++;
 
+        //spawn a child
         child = fork();
 
         //exit if child process did not spawn
@@ -57,7 +63,7 @@ int main(int argc, char *argv[]){
                 counter++;
                 word = strtok(NULL, " ");
             }
-            argument[counter++] = NULL;
+            argument[counter++] = NULL; //set end of array to NULL
 
             char output_file[MAX_LEN]; // array to hold stdout
             char error_file[MAX_LEN]; // array to hold stderr
@@ -76,7 +82,7 @@ int main(int argc, char *argv[]){
 
             fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
 
-            fflush(stdout);
+            fflush(stdout); //clear output buffer
 
             //check if execvp ran properly
             if(execvp(argument[0], argument) == -1){
@@ -95,13 +101,13 @@ int main(int argc, char *argv[]){
         sprintf(output_file, "%d.out", child);
         sprintf(error_file, "%d.err", child);
 
-        //open log files
-        //send fd_1 to PID.out file and fd_2 to PID.err for the PID
+        //open output file and send fd_1 to PID.out file
         int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
         dup2(fd_1, 1);
 
-        fflush(stdout);
+        fflush(stdout); //clear output buffer
 
+        //open err file and send fd_2 to PID.err file
         int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
         dup2(fd_2, 2);
 
@@ -117,7 +123,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    line_count++;
+    line_count++; //increase line count
 
     return 0;
 }
