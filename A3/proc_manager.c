@@ -20,7 +20,7 @@
 
 /**
  * Read from stdin and run the commands in parallel
- * assumptions: there is at least one line of command
+ * assumptions: there is at least one line of command of 2 parameters
  * input: commands
  * output: command results in output and error file
 **/
