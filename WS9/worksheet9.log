@@ -1,0 +1,8 @@
+1653  make all
+ 1654  ./sigusr &
+ 1655  kill -SIGUSR1 2727
+ 1656  kill -SIGUSR2 2727
+ 1657  kill -SIGCONT 2727
+ 1658  kill -9 2727
+ 1659  history
+[1]+  Killed                  ./sigusr
