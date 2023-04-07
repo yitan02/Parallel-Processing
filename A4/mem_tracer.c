@@ -1,3 +1,10 @@
+/**
+ * Description: This program executes multiple commands.
+ * Author names: Talia Syed, Yinglin Tan
+ * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
+ * Last modified date: 4/7/23
+ * Creation date: 3/29/23
+ **/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +34,7 @@
 struct TRACE_NODE_STRUCT {
     char* functionid; // ptr to function identifier (a function name)
     struct TRACE_NODE_STRUCT* next; // ptr to next frama
+    int index; // index of linked list
 };
 typedef struct TRACE_NODE_STRUCT TRACE_NODE;
 static TRACE_NODE* TRACE_TOP = NULL; // ptr to the top of the stack
@@ -131,7 +139,7 @@ char* PRINT_TRACE()
 void* REALLOC(void* p,int t,char* file,int line)
 {
     p = realloc(p,t);
-    printf("File mem_trace.c, line %d, function %s reallocated the memory segment at address %s to a new size %d", line, PRINT_TRACE, file, t);
+    printf("File %s, line %d, function %s reallocated the memory segment at address %p to a new size %d\n", file, line, PRINT_TRACE(), p, t);
     return p;
 }
 
@@ -146,7 +154,7 @@ void* MALLOC(int t,char* file,int line)
 {
     void* p;
     p = malloc(t);
-    printf("File mem_trace.c, line %d, function %s reallocated the memory segment at address %s to a new size %d", line, PRINT_TRACE, file, t);
+    printf("File %s, line %d, function %s reallocated the memory segment at address %p to a new size %d\n", file, line, PRINT_TRACE(), p, t);
     return p;
 }
 
@@ -160,8 +168,8 @@ void* MALLOC(int t,char* file,int line)
 void FREE(void* p,char* file,int line)
 {
     free(p);
-    printf("File mem_trace.c, line %d, function %s reallocated the memory segment at address %s", line, PRINT_TRACE, file);
-    //%s might be %u
+    printf("File %s, line %d, function %s reallocated the memory segment at address %p\n", file, line, PRINT_TRACE(), p);
+
 }
 #define realloc(a,b) REALLOC(a,b,__FILE__,__LINE__)
 #define malloc(a) MALLOC(a,__FILE__,__LINE__)
@@ -182,6 +190,76 @@ int add_column(int** array,int rows,int columns)
     POP_TRACE();
     return (columns+1);
 }// end add_column
+
+// function add_row will add an extra row to a 2d array of ints.
+// Returns the number of new rows (updated)
+int add_row(int** array, int rows, int columns){
+    PUSH_TRACE("add_row");
+    int i;
+
+    for(i = 0; i < columns; i++){
+        array[i] = (int*) realloc(array[i], sizeof(int) * (rows + 1));
+        array[i][rows] = 10 * i + rows;
+    }
+    POP_TRACE();
+    return (rows + 1);
+}
+
+// print the nodes recursively in the linked list
+void print_nodes(TRACE_NODE* node){
+    PUSH_TRACE("print_nodes");
+
+    printf("Index: %d, Line: %s", node->index, node->functionid);
+
+    if(node->next != NULL){
+        print_nodes(node->next);
+    }
+
+    POP_TRACE();
+    return;
+}
+
+// delete the nodes in linked list recursively
+void delete_nodes(TRACE_NODE* node){
+    PUSH_TRACE("delete_nodes");
+
+    //recursively call the function if next node is not null
+    if (node->next != NULL){
+        delete_nodes(node->next);
+    }
+    free(node);
+    free(functionid);
+
+    POP_TRACE();
+    return;
+
+}
+
+char* add_node(TRACE_NODE* node, char* cmd_line, int index){
+    PUSH_TRACE("add_node");
+
+    TRACE_NODE* new_node = (TRACE_NODE *) malloc (sizeof(TRACE_NODE));
+    new_node->functionid = (char *) malloc (strlen(cmd_line) + 1);
+
+    strcpy(new_node->functionid, cmd_line);
+    new_node->index = index;
+    new_node->next = NULL;
+
+    //set new node to the head if the head is empty
+    if(*node == NULL){
+        *node = new_node;
+    }
+    else{
+        //go through the linked list and add it to the end of the list
+        while(head->next != NULL){
+            head = head->next;
+        }
+    }
+
+    POP_TRACE();
+    return();
+
+}
 
 // ------------------------------------------
 // function make_extend_array
@@ -230,6 +308,7 @@ void make_extend_array()
 #define MAX_CHAR 100
 #define MAX_LEN 30
 
+//note: have dup2 stdout and create array function
 int main()
 {
     PUSH_TRACE("main");
@@ -237,114 +316,7 @@ int main()
     POP_TRACE();
     //printNodes();
 
-    /**-------------A3 code-------------**/
-    int status; //declare status
-    pid_t child; //declare child pid
 
-    char current_line[MAX_LEN]; //array to store current line read
-    //int line_count = 0; //counter for line count
-    int cmd_count = 0; //counter for the amount of commands
-
-    //while loop reads from stdin/terminal input
-    while(fgets(current_line, MAX_LEN, stdin)){
-        //convert to C string
-        if (current_line[strlen(current_line) - 1] == '\n'){
-            current_line[strlen(current_line) - 1] = '\0';
-        }
-
-        cmd_count++;
-
-        //spawn a child
-        child = fork();
-
-        //exit if child process did not spawn
-        if(child < 0){
-            fprintf(stderr, "Fork failed");
-            exit(1);
-        }
-        //child process
-        //to do: malloc outside child process?
-        //       initialize dynamic array outside child
-        //       initialize linked list
-        //       if statement for if dynamic array memory runs out, and implement realloc
-        //       free in parent or child? (maybe parent)
-        //       figure out where to implement memory tracing stack, called in child or parent?
-        else if (child == 0){
-            //split current line into parts by words
-            char *argument[MAX_LEN + 1] = {0}; //to do: change to dynamic array
-            char *word = strtok(current_line, " ");
-            int counter = 0;
-
-            //separate each word based on space
-            while(word != NULL && counter < MAX_LEN - 1){
-                argument[counter] = word;
-                counter++;
-                word = strtok(NULL, " ");
-            }
-            argument[counter++] = NULL; //set end of array to NULL
-
-            char output_file[MAX_LEN]; // array to hold stdout, to do: change to dynamic size
-            //char error_file[MAX_LEN]; // array to hold stderr
-
-            //push the logs to their respective files
-            sprintf(output_file, "mem_trace.out");
-            //sprintf(error_file, "%d.err", (int) getpid());
-
-            //open log files
-            int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
-            //int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
-
-            //send fd_1 to PID.out file and fd_2 to PID.err for the PID
-            dup2(fd_1, 1);
-            //dup2(fd_2, 2);
-
-            //fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
-
-            fflush(stdout); //clear output buffer
-
-            //check if execvp ran properly
-            if(execvp(argument[0], argument) == -1){
-                perror(argument[0]);
-                exit(2);
-            }
-        }
-    }
-
-    //parent process
-    while((child = wait(&status)) > 0){
-        char output_file[MAX_LEN] = {0}; // array to hold stdout
-        //char error_file[MAX_LEN] = {0}; // array to hold stderr
-
-        //push the logs to their respective files
-        sprintf(output_file, "%d.out", child);
-        //sprintf(error_file, "%d.err", child);
-
-        //open output file and send fd_1 to PID.out file
-        int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
-        dup2(fd_1, 1);
-
-        fflush(stdout); //clear output buffer
-
-        //open err file and send fd_2 to PID.err file
-        //int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
-        //dup2(fd_2, 2);
-
-        //if process exited normally
-        if (WIFEXITED(status)) {
-            fprintf(stdout, "Finished child %d pid of parent %d\n", child, (int) getpid());
-            fflush(stdout); //clear stdout
-            fprintf(stderr, "Exited with exitcode = %d\n", WEXITSTATUS(status));
-        }
-        //if process killed
-        else if (WIFSIGNALED(status)) {
-                fprintf(stderr, "Killed with signal %d\n", WTERMSIG(status));
-        }
-    }
-
-    //to do: printNodes
-
-    //line_count++; //increase line count
-    /**-------------A3 code-------------**/
 
     return(0);
 }// end main
