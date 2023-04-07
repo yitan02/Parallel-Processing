@@ -39,6 +39,14 @@ struct TRACE_NODE_STRUCT {
 typedef struct TRACE_NODE_STRUCT TRACE_NODE;
 static TRACE_NODE* TRACE_TOP = NULL; // ptr to the top of the stack
 
+struct LINKED_LIST_STRUCT {
+    char* line; // ptr to line
+    struct LINKED_LIST_STRUCT* next; // ptr to next
+    int index; // index of linked list
+};
+typedef struct LINKED_LIST_STRUCT LINKED_LIST;
+static LINKED_LIST* HEAD = NULL; // ptr to the head of the list
+
 /* --------------------------------*/
 /* function PUSH_TRACE */
 /*
@@ -206,7 +214,7 @@ int add_row(int** array, int rows, int columns){
 }
 
 // print the nodes recursively in the linked list
-void print_nodes(TRACE_NODE* node){
+void print_nodes(LINKED_LIST* node){
     PUSH_TRACE("print_nodes");
 
     printf("Index: %d, Line: %s", node->index, node->functionid);
@@ -220,7 +228,7 @@ void print_nodes(TRACE_NODE* node){
 }
 
 // delete the nodes in linked list recursively
-void delete_nodes(TRACE_NODE* node){
+void delete_nodes(LINKED_LIST* node){
     PUSH_TRACE("delete_nodes");
 
     //recursively call the function if next node is not null
@@ -228,32 +236,35 @@ void delete_nodes(TRACE_NODE* node){
         delete_nodes(node->next);
     }
     free(node);
-    free(functionid);
+    free(line);
 
     POP_TRACE();
     return;
 
 }
 
-char* add_node(TRACE_NODE* node, char* cmd_line, int index){
+char* add_node(char* cmd_line, int index){
     PUSH_TRACE("add_node");
 
-    TRACE_NODE* new_node = (TRACE_NODE *) malloc (sizeof(TRACE_NODE));
-    new_node->functionid = (char *) malloc (strlen(cmd_line) + 1);
+    LINKED_LIST* new_node = (LINKED_LIST *) malloc (sizeof(LINKED_LIST));
+    new_node->line = (char *) malloc (strlen(cmd_line) + 1);
 
-    strcpy(new_node->functionid, cmd_line);
+    strcpy(new_node->line, cmd_line);
     new_node->index = index;
     new_node->next = NULL;
 
     //set new node to the head if the head is empty
-    if(*node == NULL){
-        *node = new_node;
+    if(HEAD == NULL){
+        HEAD = new_node;
     }
     else{
-        //go through the linked list and add it to the end of the list
-        while(head->next != NULL){
-            head = head->next;
+        LINKED_LIST* temp = HEAD; //temp node for traversing
+
+        //go through the linked list to append to the end
+        while(temp->next != NULL){
+            temp = temp->next;
         }
+        temp->next = new_node; //add the new node to the end
     }
 
     POP_TRACE();
@@ -308,7 +319,11 @@ void make_extend_array()
 #define MAX_CHAR 100
 #define MAX_LEN 30
 
-//note: have dup2 stdout and create array function
+//note:
+//have dup2 stdout and create array function
+//functions for make and extend linked list
+//same for array
+//print array,free array
 int main()
 {
     PUSH_TRACE("main");
