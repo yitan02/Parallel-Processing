@@ -12,7 +12,6 @@
 #include <stdarg.h>
 /**
  *Checklist:
- *  -insert A3 code
  *  -use malloc to create a dynamic array of 10 char * pointers
  *  -implement realloc to expand the dynamic array size
  *  -figure out how to store line and index in linked list node
@@ -46,6 +45,16 @@ struct LINKED_LIST_STRUCT {
 };
 typedef struct LINKED_LIST_STRUCT LINKED_LIST;
 static LINKED_LIST* HEAD = NULL; // ptr to the head of the list
+
+struct DYNAMIC_ARRAY_STRUCT {
+    char** line; // ptr to line
+    int length;
+    int index;
+};
+typedef struct DYNAMIC_ARRAY_STRUCT DYNAMIC_ARRAY;
+
+
+
 
 /* --------------------------------*/
 /* function PUSH_TRACE */
@@ -228,12 +237,12 @@ void print_nodes(LINKED_LIST* node){
 }
 
 // delete the nodes in linked list recursively
-void delete_nodes(LINKED_LIST* node){
+void free_nodes(LINKED_LIST* node){
     PUSH_TRACE("delete_nodes");
 
     //recursively call the function if next node is not null
     if (node->next != NULL){
-        delete_nodes(node->next);
+        free_nodes(node->next);
     }
     free(node);
     free(line);
@@ -269,6 +278,57 @@ char* add_node(char* cmd_line, int index){
 
     POP_TRACE();
     return();
+
+}
+
+void free_array(DYNAMIC_ARRAY* array){
+        PUSH_TRACE("free_array");
+
+        //loop through the array to free each one
+        for(int i = 0; i < sizeof(array); i++){
+                free(array[i]);
+        }
+
+        free(array);
+
+        POP_TRACE();
+        return 0;
+}
+
+void print_array(DYNAMIC_ARRAY* array){
+        PUSH_TRACE("print_array");
+
+        //loop through the array to print each item
+        for(int i = 0; i < sizeof(array); i++){
+            printf("Index %d: %s\n", i, array[i]);
+        }
+
+        POP_TRACE();
+        return 0;
+}
+
+void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
+        PUSH_TRACE("add_cmd");
+
+        if(array->index == array->length){
+           array->length = array->length * 2;
+           array->line = (char*)malloc(sizeof(char*) * array->length);
+        }
+        array->index = (char*) malloc(sizeof(char) * sizeof(cmd_line));
+
+
+
+        POP_TRACE();
+        return 0;
+}
+
+char** create_array(){
+        PUSH_TRACE("create_array");
+
+
+
+        POP_TRACE();
+        return ;
 
 }
 
@@ -316,9 +376,7 @@ void make_extend_array()
 
 // ----------------------------------------------
 // function main
-#define MAX_CHAR 100
-#define MAX_LEN 30
-
+#define MAX_LEN 1000
 //note:
 //have dup2 stdout and create array function
 //functions for make and extend linked list
@@ -327,10 +385,34 @@ void make_extend_array()
 int main()
 {
     PUSH_TRACE("main");
-    make_extend_array();
-    POP_TRACE();
-    //printNodes();
+    //make_extend_array();
 
+    LINKED_LIST* list; //declare linked list
+
+    //declare array
+    //DYNAMIC_ARRAY* dynamic_array;
+
+    char current_line[len];
+    int index = 0;
+    int arr_length = 10;
+
+    while(fgets(current_line, MAX_LEN, stdin){
+
+        list = add_node(current_line, index);
+        //dynamic_array = add(current_line, index);
+        index++;
+    }
+    free(current_line);
+
+    print_nodes(list);
+    //print_list(dynamic_array);
+
+    free_nodes(list);
+    //do the same for the array
+    //free_array(dynamic_array);
+    free(TRACE_TOP);
+
+    POP_TRACE();
 
 
     return(0);
