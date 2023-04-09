@@ -2,7 +2,7 @@
  * Description: This program executes multiple commands.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/7/23
+ * Last modified date: 4/8/23
  * Creation date: 3/29/23
  **/
 
