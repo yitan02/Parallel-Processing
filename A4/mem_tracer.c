@@ -314,7 +314,7 @@ void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
 
         if(array->index == array->length){
            array->length = array->length * 2;
-           array->line = (char**)realloc(sizeof(char) * array->length);
+           array->line = (char**)realloc(array->line, sizeof(char) * array->length);
         }
 
         array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) * 1.5);
@@ -400,7 +400,7 @@ int print_to_mem_trace(){
 
 // ----------------------------------------------
 // function main
-#define MAX_LEN 1000
+#define MAX_LEN 100
 //note:
 //have dup2 stdout and create array function
 //functions for make and extend linked list
@@ -412,18 +412,17 @@ int main()
     //make_extend_array();
 
     LINKED_LIST* list; //declare linked list
+    DYNAMIC_ARRAY* dynamic_array; //declare array
 
-    //declare array
-    DYNAMIC_ARRAY* dynamic_array;
-
-    char current_line[len];
+    char current_line[100];
     int index = 0;
-    int arr_length = 10;
+    //int arr_length = 10;
 
-    while(fgets(current_line, MAX_LEN, stdin)){
+    while(fgets(current_line, MAX_LEN, stdin) != NULL){
 
-        list = add_node(current_line, index);
-        dynamic_array = add(current_line, index);
+        add_node(current_line, index);
+        add_cmd(dynamic_array, current_line);
+
         index++;
     }
     free(current_line);
