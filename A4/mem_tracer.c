@@ -254,6 +254,7 @@ void free_array(DYNAMIC_ARRAY* array){
                 free(array->line[i]);
         }
 
+        free(array->line);
         free(array);
 
         POP_TRACE();
