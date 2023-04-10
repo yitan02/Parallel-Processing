@@ -411,8 +411,8 @@ int main()
     PUSH_TRACE("main");
     //make_extend_array();
 
-    LINKED_LIST* list; //declare linked list
-    DYNAMIC_ARRAY* dynamic_array; //declare array
+    LINKED_LIST* list = malloc(sizeof(*list)); //declare linked list
+    DYNAMIC_ARRAY* dynamic_array = malloc (sizeof(*dynamic_array)); //declare array
 
     char current_line[100];
     int index = 0;
