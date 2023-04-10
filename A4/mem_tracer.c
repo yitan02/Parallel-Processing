@@ -2,7 +2,7 @@
  * Description: This program executes multiple commands.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/8/23
+ * Last modified date: 4/9/23
  * Creation date: 3/29/23
  **/
 
@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 /**
  *Checklist:
  *  -use malloc to create a dynamic array of 10 char * pointers
@@ -55,7 +58,6 @@ typedef struct DYNAMIC_ARRAY_STRUCT DYNAMIC_ARRAY;
 
 
 
-
 /* --------------------------------*/
 /* function PUSH_TRACE */
 /*
@@ -72,25 +74,25 @@ void PUSH_TRACE(char* p) // push p on the stack
     TRACE_NODE* tnode;
     static char glob[]="global";
 
-        if (TRACE_TOP==NULL) {
-            // initialize the stack with "global" identifier
-            TRACE_TOP=(TRACE_NODE*) malloc(sizeof(TRACE_NODE));
+    if (TRACE_TOP==NULL) {
+        // initialize the stack with "global" identifier
+        TRACE_TOP=(TRACE_NODE*) malloc(sizeof(TRACE_NODE));
             // no recovery needed if allocation failed, this is only
             // used in debugging, not in production
-            if (TRACE_TOP==NULL) {
+        if (TRACE_TOP==NULL) {
                 printf("PUSH_TRACE: memory allocation error\n");
                 exit(1);
-            }
+        }
 
         TRACE_TOP->functionid = glob;
         TRACE_TOP->next=NULL;
-        }//if
+    }//if
 
-// create the node for p
-tnode = (TRACE_NODE*) malloc(sizeof(TRACE_NODE));
+    // create the node for p
+    tnode = (TRACE_NODE*) malloc(sizeof(TRACE_NODE));
 
-// no recovery needed if allocation failed, this is only
-// used in debugging, not in production
+    // no recovery needed if allocation failed, this is only
+    // used in debugging, not in production
     if (tnode==NULL) {
         printf("PUSH_TRACE: memory allocation error\n");
         exit(1);
@@ -226,7 +228,7 @@ int add_row(int** array, int rows, int columns){
 void print_nodes(LINKED_LIST* node){
     PUSH_TRACE("print_nodes");
 
-    printf("Index: %d, Line: %s", node->index, node->functionid);
+    printf("Linked List Index: %d, Line: %s", node->index, node->line);
 
     if(node->next != NULL){
         print_nodes(node->next);
@@ -245,14 +247,14 @@ void free_nodes(LINKED_LIST* node){
         free_nodes(node->next);
     }
     free(node);
-    free(line);
+    free(node->line);
 
     POP_TRACE();
     return;
 
 }
 
-char* add_node(char* cmd_line, int index){
+void add_node(char* cmd_line, int index){
     PUSH_TRACE("add_node");
 
     LINKED_LIST* new_node = (LINKED_LIST *) malloc (sizeof(LINKED_LIST));
@@ -277,7 +279,7 @@ char* add_node(char* cmd_line, int index){
     }
 
     POP_TRACE();
-    return();
+    return;
 
 }
 
@@ -285,26 +287,26 @@ void free_array(DYNAMIC_ARRAY* array){
         PUSH_TRACE("free_array");
 
         //loop through the array to free each one
-        for(int i = 0; i < sizeof(array); i++){
-                free(array[i]);
+        for(int i = 0; i < array->length; i++){
+                free(array->line[i]);
         }
 
         free(array);
 
         POP_TRACE();
-        return 0;
+        return;
 }
 
 void print_array(DYNAMIC_ARRAY* array){
         PUSH_TRACE("print_array");
 
         //loop through the array to print each item
-        for(int i = 0; i < sizeof(array); i++){
-            printf("Index %d: %s\n", i, array[i]);
+        for(int i = 0; i < array->length; i++){
+            printf("Index %d: %s\n", i, array->line[i]);
         }
 
         POP_TRACE();
-        return 0;
+        return;
 }
 
 void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
@@ -312,67 +314,89 @@ void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
 
         if(array->index == array->length){
            array->length = array->length * 2;
-           array->line = (char*)malloc(sizeof(char*) * array->length);
+           array->line = (char**)realloc(sizeof(char) * array->length);
         }
-        array->index = (char*) malloc(sizeof(char) * sizeof(cmd_line));
 
+        array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) * 1.5);
+        strcpy(array->line[array->index], cmd_line);
+        array->index = array->index + 1;
 
+        POP_TRACE();
+        return;
+}
+
+DYNAMIC_ARRAY* create_array(){
+        PUSH_TRACE("create_array");
+
+        DYNAMIC_ARRAY* new_array = (DYNAMIC_ARRAY*) malloc(sizeof(DYNAMIC_ARRAY));
+        new_array->length = 10;
+        new_array->line = (char**)malloc(sizeof(char) * new_array->length);
+        new_array->index = 0;
+
+        POP_TRACE();
+        return new_array;
+
+}
+
+int print_to_mem_trace(){
+        PUSH_TRACE("print_to_mem_trace");
+
+        char output_file[100] = {0}; // array to hold stdout
+
+        //push the logs to their respective files
+        sprintf(output_file, "mem_trace.out");
+
+        //open output file and send fd_1 to mem_trace.out file
+        int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+        dup2(fd_1, 1);
+
+        fflush(stdout); //clear output buffer
 
         POP_TRACE();
         return 0;
-}
-
-char** create_array(){
-        PUSH_TRACE("create_array");
-
-
-
-        POP_TRACE();
-        return ;
-
 }
 
 // ------------------------------------------
 // function make_extend_array
 // Example of how the memory trace is done
 // This function is intended to demonstrate how memory usage tracing of malloc and free is done
-void make_extend_array()
-{
-    PUSH_TRACE("make_extend_array");
-    int i, j;
-    int **array;
-    int ROW = 4;
-    int COL = 3;
-
-    //make array
-    array = (int**) malloc(sizeof(int*)*4); // 4 rows
-    for(i=0; i<ROW; i++) {
-        array[i]=(int*) malloc(sizeof(int)*3); // 3 columns
-    for(j=0; j<COL; j++)
-        array[i][j]=10*i+j;
-    }//for
-
-    //display array
-    for(i=0; i<ROW; i++)
-        for(j=0; j<COL; j++)
-            printf("array[%d][%d]=%d\n",i,j,array[i][j]);
-
-    // and a new column
-    int NEWCOL = add_column(array,ROW,COL);
-
-    // now display the array again
-    for(i=0; i<ROW; i++)
-        for(j=0; j<NEWCOL; j++)
-            printf("array[%d][%d]=%d\n",i,j,array[i][j]);
-
-    //now deallocate it
-    for(i=0; i<ROW; i++)
-        free((void*)array[i]);
-    free((void*)array);
-
-    POP_TRACE();
-    return;
-}//end make_extend_array
+// void make_extend_array()
+// {
+//     PUSH_TRACE("make_extend_array");
+//     int i, j;
+//     int **array;
+//     int ROW = 4;
+//     int COL = 3;
+//
+//     //make array
+//     array = (int**) malloc(sizeof(int*)*4); // 4 rows
+//     for(i=0; i<ROW; i++) {
+//         array[i]=(int*) malloc(sizeof(int)*3); // 3 columns
+//     for(j=0; j<COL; j++)
+//         array[i][j]=10*i+j;
+//     }//for
+//
+//     //display array
+//     for(i=0; i<ROW; i++)
+//         for(j=0; j<COL; j++)
+//             printf("array[%d][%d]=%d\n",i,j,array[i][j]);
+//
+//     // and a new column
+//     int NEWCOL = add_column(array,ROW,COL);
+//
+//     // now display the array again
+//     for(i=0; i<ROW; i++)
+//         for(j=0; j<NEWCOL; j++)
+//             printf("array[%d][%d]=%d\n",i,j,array[i][j]);
+//
+//     //now deallocate it
+//     for(i=0; i<ROW; i++)
+//         free((void*)array[i]);
+//     free((void*)array);
+//
+//     POP_TRACE();
+//     return;
+// }//end make_extend_array
 
 // ----------------------------------------------
 // function main
@@ -390,16 +414,16 @@ int main()
     LINKED_LIST* list; //declare linked list
 
     //declare array
-    //DYNAMIC_ARRAY* dynamic_array;
+    DYNAMIC_ARRAY* dynamic_array;
 
     char current_line[len];
     int index = 0;
     int arr_length = 10;
 
-    while(fgets(current_line, MAX_LEN, stdin){
+    while(fgets(current_line, MAX_LEN, stdin)){
 
         list = add_node(current_line, index);
-        //dynamic_array = add(current_line, index);
+        dynamic_array = add(current_line, index);
         index++;
     }
     free(current_line);
@@ -408,8 +432,9 @@ int main()
     //print_list(dynamic_array);
 
     free_nodes(list);
+
     //do the same for the array
-    //free_array(dynamic_array);
+    free_array(dynamic_array);
     free(TRACE_TOP);
 
     POP_TRACE();
