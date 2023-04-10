@@ -389,7 +389,7 @@ int main()
 
         index++;
     }
-    free(current_line);
+    //free(current_line);
 
     print_nodes(list);
     //print_list(dynamic_array);
@@ -398,7 +398,7 @@ int main()
 
     //do the same for the array
     free_array(dynamic_array);
-    free(dynamic_array);
+    //free(dynamic_array);
     free(list);
     free(TRACE_TOP);
 
