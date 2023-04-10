@@ -15,16 +15,9 @@
 
 /**
  *Checklist:
- *  -use malloc to create a dynamic array of 10 char * pointers
- *  -implement realloc to expand the dynamic array size
- *  -figure out how to store line and index in linked list node
- *  -create recursive function printNodes that prints contents of printNodes
- *  +create function for allocating(done), reallocating(done), and freeing memory (done)
- *  -create memory consumption tracing function that implements the three functions above
- *  -memory consumption tracing function should be ran on dynamic array and array linked list (using stack given)
- *  -write all memory tracing messages to file name memtrace.out using dup2
- *  -take input and store in char ** array and linked list
- *  -run valgrind to check for memory leak
+ *  -check for memory leak
+ *  -finish print function
+ *  -comments
  *
 **/
 
@@ -193,36 +186,6 @@ void FREE(void* p,char* file,int line)
 #define realloc(a,b) REALLOC(a,b,__FILE__,__LINE__)
 #define malloc(a) MALLOC(a,__FILE__,__LINE__)
 #define free(a) FREE(a,__FILE__,__LINE__)
-// -----------------------------------------
-// function add_column will add an extra column to a 2d array of ints.
-// This function is intended to demonstrate how memory usage tracing of realloc is done
-// Returns the number of new columns (updated)
-int add_column(int** array,int rows,int columns)
-{
-    PUSH_TRACE("add_column");
-    int i;
-
-    for(i=0; i<rows; i++) {
-        array[i]=(int*) realloc(array[i],sizeof(int)*(columns+1));
-        array[i][columns]=10*i+columns;
-    }//for
-    POP_TRACE();
-    return (columns+1);
-}// end add_column
-
-// function add_row will add an extra row to a 2d array of ints.
-// Returns the number of new rows (updated)
-int add_row(int** array, int rows, int columns){
-    PUSH_TRACE("add_row");
-    int i;
-
-    for(i = 0; i < columns; i++){
-        array[i] = (int*) realloc(array[i], sizeof(int) * (rows + 1));
-        array[i][rows] = 10 * i + rows;
-    }
-    POP_TRACE();
-    return (rows + 1);
-}
 
 // print the nodes recursively in the linked list
 void print_nodes(LINKED_LIST* node){
@@ -317,7 +280,7 @@ void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
            array->line = (char**)realloc(array->line, sizeof(char) * array->length);
         }
 
-        array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) * 1.5);
+        array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) + 1);
         strcpy(array->line[array->index], cmd_line);
         array->index = array->index + 1;
 
@@ -344,7 +307,7 @@ int print_to_mem_trace(){
         char output_file[100] = {0}; // array to hold stdout
 
         //push the logs to their respective files
-        sprintf(output_file, "mem_trace.out");
+        sprintf(output_file, "memtrace.out");
 
         //open output file and send fd_1 to mem_trace.out file
         int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
@@ -434,6 +397,8 @@ int main()
 
     //do the same for the array
     free_array(dynamic_array);
+    free(dynamic_array);
+    free(list);
     free(TRACE_TOP);
 
     POP_TRACE();
