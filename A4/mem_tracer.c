@@ -14,14 +14,6 @@
 #include <unistd.h>
 
 /**
- *Checklist:
- *  -check for memory leak
- *  -finish print function
- *  -comments
- *
-**/
-
-/**
 *TRACE_NODE_STRUCT is a linked list of
 *pointers to function identifiers
 *TRACE_TOP is the head of the list is the top of the stack
@@ -38,23 +30,15 @@ struct NODE_STRUCT {
     char* line; // ptr to line
     struct  NODE_STRUCT* next; // ptr to next
     int index; // index of linked list
-};
+    int length; //size of the list
+}
 typedef struct NODE_STRUCT NODE;
 static NODE* HEAD = NULL; // ptr to the head of the list
-// static NODE* CURRENT= NULL; //ptr to current node
-
-// struct LIST_STRUCT {
-//     char* line; // ptr to line
-//     struct LINKED_LIST_STRUCT* next; // ptr to next
-//     int index; // index of linked list
-// };
-// typedef struct LIST_STRUCT NODE;
-// static LIST* HEAD = NULL; // ptr to the head of the list
 
 struct DYNAMIC_ARRAY_STRUCT {
     char** line; // ptr to line
-    int length;
-    int index;
+    int length; // size of the list
+    int index; // index of the list
 };
 typedef struct DYNAMIC_ARRAY_STRUCT DYNAMIC_ARRAY;
 
@@ -200,9 +184,10 @@ void FREE(void* p,char* file,int line)
 void print_nodes(NODE* head){
     PUSH_TRACE("print_nodes");
 
-    printf("Linked List Index: %d, Line: %s", head->index, head->line);
+    head = HEAD;
 
     if(head->next != NULL){
+        printf("Linked List Index: %d, Line: %s", head->index, head->line);
         print_nodes(head->next);
     }
 
@@ -212,22 +197,15 @@ void print_nodes(NODE* head){
 
 // delete the nodes in linked list recursively
 void free_nodes(NODE* head){
-    PUSH_TRACE("delete_nodes");
+    PUSH_TRACE("free_nodes");
 
     while (head != NULL){
             NODE* temp = head->next;
-            free(head);
             free(head->line);
+            free(head);
             head = temp;
     }
-    free(HEAD);
-//     //recursively call the function if next node is not null
-//     if (head->next != NULL){
-//         free_nodes(head->next);
-// //         free(head->next);
-//     }
-//     free(head);
-//     free(head->line);
+    free(head);
 
     POP_TRACE();
     return;
@@ -237,27 +215,13 @@ void free_nodes(NODE* head){
 void add_node(char* cmd_line, int index){
     PUSH_TRACE("add_node");
 
-    NODE* new_node = (NODE*) malloc (sizeof(NODE));
-    new_node->line = (char *) malloc (strlen(cmd_line) + 1);
+    NODE* new_node = (NODE*) malloc(sizeof(NODE));
+    new_node->line = (char*) malloc (sizeof(char) * strlen(cmd_line) + sizeof(char));
 
     strcpy(new_node->line, cmd_line);
     new_node->index = index;
     new_node->next = HEAD;
     HEAD = new_node;
-
-//     //set new node to the head if the head is empty
-//     if(HEAD == NULL){
-//         HEAD = new_node;
-//     }
-//     else{
-//         LINKED_LIST* temp = HEAD; //temp node for traversing
-//
-//         //go through the linked list to append to the end
-//         while(temp->next != NULL){
-//             temp = temp->next;
-//         }
-//         temp->next = new_node; //add the new node to the end
-//     }
 
     POP_TRACE();
     return;
@@ -268,7 +232,7 @@ void free_array(DYNAMIC_ARRAY* array){
         PUSH_TRACE("free_array");
 
         //loop through the array to free each one
-        for(int i = 0; i < array->length; i++){
+        for(int i = 0; i < array->index; i++){
                 free(array->line[i]);
         }
 
@@ -296,7 +260,7 @@ void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
 
         if(array->index == array->length){
            array->length = array->length * 2;
-           array->line = (char**)realloc(array->line, sizeof(char) * array->length);
+           array->line = (char**)realloc(array->line, sizeof(char*) * array->length);
         }
 
         array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) + 1);
@@ -380,55 +344,38 @@ int print_to_mem_trace(){
 //     return;
 // }//end make_extend_array
 
+#define MAX_LEN 100
 // ----------------------------------------------
 // function main
-#define MAX_LEN 100
-//note:
-//have dup2 stdout and create array function
-//functions for make and extend linked list
-//same for array
-//print array,free array
 int main()
 {
     PUSH_TRACE("main");
-    //make_extend_array();
 
-//     LINKED_LIST* list = malloc(sizeof(*list)); //declare linked list
-//     DYNAMIC_ARRAY* dynamic_array = malloc (sizeof(*dynamic_array)); //declare array
-
-    //LINKED_LIST* list;
     DYNAMIC_ARRAY* dynamic_array = create_array();
-
 
     char current_line[100];
     int index = 0;
-    //int arr_length = 10;
+    print_to_mem_trace();
 
     while(fgets(current_line, MAX_LEN, stdin) != NULL){
+
+        if (current_line[strlen(current_line) - 1] == '\n'){
+                current_line[strlen(current_line) - 1] = '\0';
+        }
 
         add_node(current_line, index);
         add_cmd(dynamic_array, current_line);
 
         index++;
     }
-    //free(current_line);
-
     print_nodes(HEAD);
-    //print_list(dynamic_array);
 
     free_nodes(HEAD);
 
-    //do the same for the array
-
-    //free(dynamic_array);
-    //free(list);
-
     free_array(dynamic_array);
 
-    free(TRACE_TOP);
-
     POP_TRACE();
-
+    POP_TRACE();
 
     return(0);
 }// end main
