@@ -2,7 +2,7 @@
  * Description: This program executes multiple commands.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/9/23
+ * Last modified date: 4/10/23
  * Creation date: 3/29/23
  **/
 
@@ -34,13 +34,22 @@ struct TRACE_NODE_STRUCT {
 typedef struct TRACE_NODE_STRUCT TRACE_NODE;
 static TRACE_NODE* TRACE_TOP = NULL; // ptr to the top of the stack
 
-struct LINKED_LIST_STRUCT {
+struct NODE_STRUCT {
     char* line; // ptr to line
-    struct LINKED_LIST_STRUCT* next; // ptr to next
+    struct  NODE_STRUCT* next; // ptr to next
     int index; // index of linked list
 };
-typedef struct LINKED_LIST_STRUCT LINKED_LIST;
-static LINKED_LIST* HEAD = NULL; // ptr to the head of the list
+typedef struct NODE_STRUCT NODE;
+static NODE* HEAD = NULL; // ptr to the head of the list
+// static NODE* CURRENT= NULL; //ptr to current node
+
+// struct LIST_STRUCT {
+//     char* line; // ptr to line
+//     struct LINKED_LIST_STRUCT* next; // ptr to next
+//     int index; // index of linked list
+// };
+// typedef struct LIST_STRUCT NODE;
+// static LIST* HEAD = NULL; // ptr to the head of the list
 
 struct DYNAMIC_ARRAY_STRUCT {
     char** line; // ptr to line
@@ -188,13 +197,13 @@ void FREE(void* p,char* file,int line)
 #define free(a) FREE(a,__FILE__,__LINE__)
 
 // print the nodes recursively in the linked list
-void print_nodes(LINKED_LIST* node){
+void print_nodes(NODE* head){
     PUSH_TRACE("print_nodes");
 
-    printf("Linked List Index: %d, Line: %s", node->index, node->line);
+    printf("Linked List Index: %d, Line: %s", head->index, head->line);
 
-    if(node->next != NULL){
-        print_nodes(node->next);
+    if(head->next != NULL){
+        print_nodes(head->next);
     }
 
     POP_TRACE();
@@ -202,15 +211,16 @@ void print_nodes(LINKED_LIST* node){
 }
 
 // delete the nodes in linked list recursively
-void free_nodes(LINKED_LIST* node){
+void free_nodes(NODE* head){
     PUSH_TRACE("delete_nodes");
 
     //recursively call the function if next node is not null
-    if (node->next != NULL){
-        free_nodes(node->next);
+    if (head->next != NULL){
+        free_nodes(head->next);
+//         free(head->next);
     }
-    free(node);
-    free(node->line);
+    free(head);
+    free(head->line);
 
     POP_TRACE();
     return;
@@ -220,26 +230,27 @@ void free_nodes(LINKED_LIST* node){
 void add_node(char* cmd_line, int index){
     PUSH_TRACE("add_node");
 
-    LINKED_LIST* new_node = (LINKED_LIST *) malloc (sizeof(LINKED_LIST));
+    NODE* new_node = (NODE*) malloc (sizeof(NODE));
     new_node->line = (char *) malloc (strlen(cmd_line) + 1);
 
     strcpy(new_node->line, cmd_line);
     new_node->index = index;
-    new_node->next = NULL;
+    new_node->next = HEAD;
+    HEAD = new_node;
 
-    //set new node to the head if the head is empty
-    if(HEAD == NULL){
-        HEAD = new_node;
-    }
-    else{
-        LINKED_LIST* temp = HEAD; //temp node for traversing
-
-        //go through the linked list to append to the end
-        while(temp->next != NULL){
-            temp = temp->next;
-        }
-        temp->next = new_node; //add the new node to the end
-    }
+//     //set new node to the head if the head is empty
+//     if(HEAD == NULL){
+//         HEAD = new_node;
+//     }
+//     else{
+//         LINKED_LIST* temp = HEAD; //temp node for traversing
+//
+//         //go through the linked list to append to the end
+//         while(temp->next != NULL){
+//             temp = temp->next;
+//         }
+//         temp->next = new_node; //add the new node to the end
+//     }
 
     POP_TRACE();
     return;
@@ -375,8 +386,12 @@ int main()
     PUSH_TRACE("main");
     //make_extend_array();
 
-    LINKED_LIST* list = malloc(sizeof(*list)); //declare linked list
-    DYNAMIC_ARRAY* dynamic_array = malloc (sizeof(*dynamic_array)); //declare array
+//     LINKED_LIST* list = malloc(sizeof(*list)); //declare linked list
+//     DYNAMIC_ARRAY* dynamic_array = malloc (sizeof(*dynamic_array)); //declare array
+
+    //LINKED_LIST* list;
+    DYNAMIC_ARRAY* dynamic_array = create_array();
+
 
     char current_line[100];
     int index = 0;
@@ -391,15 +406,18 @@ int main()
     }
     //free(current_line);
 
-    print_nodes(list);
+    print_nodes(HEAD);
     //print_list(dynamic_array);
 
-    free_nodes(list);
+    free_nodes(HEAD);
 
     //do the same for the array
-    free_array(dynamic_array);
+
     //free(dynamic_array);
-    free(list);
+    //free(list);
+
+    free_array(dynamic_array);
+
     free(TRACE_TOP);
 
     POP_TRACE();
