@@ -356,16 +356,19 @@ DYNAMIC_ARRAY* create_array(){
 int print_to_mem_trace(){
         PUSH_TRACE("print_to_mem_trace");
 
-        char output_file[100] = {0}; // array to hold stdout
+        //char output_file[100] = {0}; // array to hold stdout
+        char* file = "memtrace.out";
 
         //push the logs to their respective files
-        sprintf(output_file, "memtrace.out");
+        //sprintf(output_file, "memtrace.out");
 
         //open output file and send fd_1 to mem_trace.out file
-        int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+        int fd_1 = open(file, O_RDWR | O_CREAT | O_APPEND, 0777);
         dup2(fd_1, 1);
 
-        fflush(stdout); //clear output buffer
+        //fflush(stdout); //clear output buffer
+
+        close(fd_1);
 
         POP_TRACE();
         return 0;
@@ -420,31 +423,36 @@ int main()
 {
     PUSH_TRACE("main");
 
-
+    //declare an array
     DYNAMIC_ARRAY* dynamic_array = create_array();
 
-    char current_line[MAX_LEN];
-    int index = 0;
-    print_to_mem_trace();
+    char current_line[MAX_LEN]; //declare current line
+    int index = 0; //declare index to 0
+    print_to_mem_trace(); //call function to print trace
 
+    //read from stdin
     while(fgets(current_line, MAX_LEN, stdin) != NULL){
 
+        //change input to proper C string
         if (current_line[strlen(current_line) - 1] == '\n'){
                 current_line[strlen(current_line) - 1] = '\0';
         }
 
+        //add node to linked list
         add_node(current_line, index);
+
+        //add command to array
         add_cmd(dynamic_array, current_line);
 
         index++;
     }
-    print_nodes(HEAD);
+    print_nodes(HEAD); //print the nodes
 
-    free_nodes(HEAD);
+    free_nodes(HEAD); //free the nodes
 
-    free_array(dynamic_array);
+    free_array(dynamic_array); //free the array
 
-    POP_TRACE();
+    POP_TRACE(); //pop twice because there's things left in the stack
     POP_TRACE();
 
     return(0);
