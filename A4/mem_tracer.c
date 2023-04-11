@@ -214,13 +214,20 @@ void print_nodes(NODE* head){
 void free_nodes(NODE* head){
     PUSH_TRACE("delete_nodes");
 
-    //recursively call the function if next node is not null
-    if (head->next != NULL){
-        free_nodes(head->next);
-//         free(head->next);
+    while (head != NULL){
+            NODE* temp = head->next;
+            free(head);
+            free(head->line);
+            head = temp;
     }
-    free(head);
-    free(head->line);
+    free(HEAD);
+//     //recursively call the function if next node is not null
+//     if (head->next != NULL){
+//         free_nodes(head->next);
+// //         free(head->next);
+//     }
+//     free(head);
+//     free(head->line);
 
     POP_TRACE();
     return;
