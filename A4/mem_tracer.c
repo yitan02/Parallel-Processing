@@ -26,22 +26,30 @@ struct TRACE_NODE_STRUCT {
 typedef struct TRACE_NODE_STRUCT TRACE_NODE;
 static TRACE_NODE* TRACE_TOP = NULL; // ptr to the top of the stack
 
+/**
+*NODE_STRUCT is a linked list of
+*pointers to function identifiers
+*HEAD is the head of the list is the top of the stack
+**/
 struct NODE_STRUCT {
     char* line; // ptr to line
     struct  NODE_STRUCT* next; // ptr to next
     int index; // index of linked list
     int length; //size of the list
-}
+};
 typedef struct NODE_STRUCT NODE;
 static NODE* HEAD = NULL; // ptr to the head of the list
 
+/**
+*DYNAMIC_ARRAY_STRUCT is an array of
+*pointers to function identifiers
+**/
 struct DYNAMIC_ARRAY_STRUCT {
     char** line; // ptr to line
     int length; // size of the list
     int index; // index of the list
 };
 typedef struct DYNAMIC_ARRAY_STRUCT DYNAMIC_ARRAY;
-
 
 
 /* --------------------------------*/
@@ -180,12 +188,20 @@ void FREE(void* p,char* file,int line)
 #define malloc(a) MALLOC(a,__FILE__,__LINE__)
 #define free(a) FREE(a,__FILE__,__LINE__)
 
-// print the nodes recursively in the linked list
+/**
+ * Print the nodes recursively in the linked list
+ * assumption: starts at head node
+ * input: a starting node that is the head
+ * output: none
+**/
 void print_nodes(NODE* head){
     PUSH_TRACE("print_nodes");
 
+    //set head to HEAD
     head = HEAD;
 
+    //if the next node is not empty, print the index and the line
+    //recursively call the function to continue printing
     if(head->next != NULL){
         printf("Linked List Index: %d, Line: %s", head->index, head->line);
         print_nodes(head->next);
@@ -195,32 +211,52 @@ void print_nodes(NODE* head){
     return;
 }
 
-// delete the nodes in linked list recursively
+/* Delete the nodes in linked list until the end
+ * assumption: starts at head node
+ * input: a node
+ * output: none
+ */
 void free_nodes(NODE* head){
     PUSH_TRACE("free_nodes");
 
+    //while the current node is not empty, free node
     while (head != NULL){
-            NODE* temp = head->next;
-            free(head->line);
-            free(head);
-            head = temp;
+            NODE* temp = head->next; //assign temp node to head's next node
+            free(head->line); //free the line
+            free(head); //free the node itself
+            head = temp; //set the head to the temp
     }
-    free(head);
+    free(head); //free the current node
 
     POP_TRACE();
     return;
 
 }
 
+/* Free the node in the linked list
+ * assumption: none
+ * input: a command line and index
+ * output: none
+ */
 void add_node(char* cmd_line, int index){
     PUSH_TRACE("add_node");
 
+    // make a new node
     NODE* new_node = (NODE*) malloc(sizeof(NODE));
+
+    //allocate memory for line
     new_node->line = (char*) malloc (sizeof(char) * strlen(cmd_line) + sizeof(char));
 
+    //copy command line to line
     strcpy(new_node->line, cmd_line);
+
+    //set new node's index to index
     new_node->index = index;
+
+    //set new node's next node to HEAD
     new_node->next = HEAD;
+
+    //set HEAD to the new node
     HEAD = new_node;
 
     POP_TRACE();
@@ -228,6 +264,11 @@ void add_node(char* cmd_line, int index){
 
 }
 
+/* Free the memory allocated for the dynamic array
+ * assumption: memory was properly allocated
+ * input: array
+ * output: none
+ */
 void free_array(DYNAMIC_ARRAY* array){
         PUSH_TRACE("free_array");
 
@@ -236,13 +277,18 @@ void free_array(DYNAMIC_ARRAY* array){
                 free(array->line[i]);
         }
 
-        free(array->line);
-        free(array);
+        free(array->line); //free the line
+        free(array); //free the array itself
 
         POP_TRACE();
         return;
 }
 
+/* Print the contents of the array
+ * assumption: none
+ * input: array
+ * output: none
+ */
 void print_array(DYNAMIC_ARRAY* array){
         PUSH_TRACE("print_array");
 
@@ -255,28 +301,46 @@ void print_array(DYNAMIC_ARRAY* array){
         return;
 }
 
+/* Add command to the dynamic array
+ * assumption: realloc works properly
+ * input: array and command line
+ * output: none
+ */
 void add_cmd(DYNAMIC_ARRAY* array, char* cmd_line){
         PUSH_TRACE("add_cmd");
 
+        //if array index and array length are the same, extend the array
         if(array->index == array->length){
-           array->length = array->length * 2;
-           array->line = (char**)realloc(array->line, sizeof(char*) * array->length);
+           array->length = array->length * 2; //extend array length by 2
+           array->line = (char**)realloc(array->line, sizeof(char*) * array->length); //realloc for line
         }
 
-        array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) + 1);
-        strcpy(array->line[array->index], cmd_line);
-        array->index = array->index + 1;
+        array->line[array->index] = (char*) malloc(strlen(cmd_line) * sizeof(char) + 1); //allocate memory for line of index
+        strcpy(array->line[array->index], cmd_line); // copy command line to line of index
+        array->index = array->index + 1; //increment array index
 
         POP_TRACE();
         return;
 }
 
+/* Create an array
+ * assumption: none
+ * input: none
+ * output: none
+ */
 DYNAMIC_ARRAY* create_array(){
         PUSH_TRACE("create_array");
 
+        //initialize a new array
         DYNAMIC_ARRAY* new_array = (DYNAMIC_ARRAY*) malloc(sizeof(DYNAMIC_ARRAY));
+
+        //set length to 10
         new_array->length = 10;
+
+        //allocate memory for line
         new_array->line = (char**)malloc(sizeof(char) * new_array->length);
+
+        //set index to 0
         new_array->index = 0;
 
         POP_TRACE();
@@ -284,6 +348,11 @@ DYNAMIC_ARRAY* create_array(){
 
 }
 
+/* Print to memtracer.c
+ * assumption: none
+ * input: none
+ * output: 0 if succeess
+ */
 int print_to_mem_trace(){
         PUSH_TRACE("print_to_mem_trace");
 
@@ -351,9 +420,10 @@ int main()
 {
     PUSH_TRACE("main");
 
+
     DYNAMIC_ARRAY* dynamic_array = create_array();
 
-    char current_line[100];
+    char current_line[MAX_LEN];
     int index = 0;
     print_to_mem_trace();
 
