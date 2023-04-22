@@ -7,11 +7,13 @@
  **/
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <fcntl.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <time.h>
 
 /* table entry: */
@@ -30,7 +32,7 @@ static struct nlist *hashtab[HASHSIZE]; /* pointer table */
 
 /* This is the hash function: form hash value for string s */
 /* TODO change to: unsigned hash(int pid) */
-/* TODO modify to hash by pid . /*
+/* TODO modify to hash by pid . */
 /* You can use a simple hash function: pid % HASHSIZE */
 unsigned hash(int pid) {
     return pid % HASHSIZE;
@@ -52,7 +54,7 @@ struct nlist *lookup(int pid) {
     return NULL; /* not found */
 }
 
-char *strdup(char *);
+//char *strdup(char *);
 /* insert: put (name, defn) in hashtab */
 /* TODO: change this to insert in hash table the info for a new pid and its command */
 /* TODO: change signature to: struct nlist *insert(char *command, int pid, int index). */
@@ -100,14 +102,14 @@ struct nlist *insert(char *command, int pid, int index) {
 don't overwrite the previous command each time a new line is read
 from the input file. Or you might not need to duplicate it. It depends on your
 implementation. **/
-char *strdup(char *s){ /* make a duplicate of s */
-    char *p;
-    p = (char *) malloc(strlen(s)+1); /* +1 for */
-    if (p != NULL){
-        strcpy(p, s);
-    }
-    return p;
-}
+// char* strdup(char* s){ /* make a duplicate of s */
+//     char *p;
+//     p = (char *) malloc(strlen(s)+1); /* +1 for */
+//     if (p != NULL){
+//         strcpy(p, s);
+//     }
+//     return p;
+// }
 
 #define MAX_CHAR 100
 #define MAX_LEN 30
@@ -189,14 +191,14 @@ int main(int argc, char *argv[]){
             }
         }
         else if (child > 0){
-            struct *nlist entry_new = insert(current_line, child, cmd_count);
+            struct nlist* entry_new = insert(current_line, child, cmd_count);
             entry_new->start_time = start;
         }
     }
 
     struct timespec finish;
     double elasped_time;
-    struct *nlist entry;
+    struct nlist* entry;
 
     //parent process
     while((child = wait(&status)) > 0){
@@ -235,7 +237,7 @@ int main(int argc, char *argv[]){
         }
 
         //calculate elasped time
-        elasped_time = finish - entry->start_time;
+        elasped_time = finish.tv_sec - start.tv_sec;
 
         if(elasped_time <= 2){
             fprintf(stderr, "Spawning too fast\n");
@@ -259,6 +261,18 @@ int main(int argc, char *argv[]){
 
             //child process
             else if(child == 0){
+                char *argument[MAX_LEN + 1] = {0};
+                char *word = strtok(entry->command, " ");
+                int counter = 0;
+
+                //separate each word based on space
+                while(word != NULL && counter < MAX_LEN - 1){
+                    argument[counter] = word;
+                    counter++;
+                    word = strtok(NULL, " ");
+                }
+                argument[counter++] = NULL; //set end of array to NULL
+
                 char output_file[MAX_LEN]; // array to hold stdout
                 char error_file[MAX_LEN]; // array to hold stderr
 
@@ -276,12 +290,18 @@ int main(int argc, char *argv[]){
 
                 fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
 
-                execvp(entry->command);
+                fflush(stdout); //clear output buffer
+
+                //check if execvp ran properly
+                if(execvp(argument[0], argument) == -1){
+                    perror(argument[0]);
+                    exit(2);
+                }
             }
 
             //parent process
             else if (child > 0){
-                struct *nlist entry_new = insert(current_line, child, cmd_count);
+                struct nlist* entry_new = insert(current_line, child, cmd_count);
                 entry_new->start_time = start;
             }
 
