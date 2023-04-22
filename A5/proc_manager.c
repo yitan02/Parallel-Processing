@@ -2,7 +2,7 @@
  * Description: This program executes multiple commands with timer.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/21/23
+ * Last modified date: 4/22/23
  * Creation date: 4/21/23
  **/
 
@@ -107,4 +107,189 @@ char *strdup(char *s){ /* make a duplicate of s */
         strcpy(p, s);
     }
     return p;
+}
+
+#define MAX_CHAR 100
+#define MAX_LEN 30
+
+/**
+ * Read from stdin and run the commands in parallel
+ * assumptions: there is at least one line of command of 2 parameters
+ * input: commands
+ * output: command results in output and error file
+**/
+int main(int argc, char *argv[]){
+
+    int status; //declare status
+    pid_t child; //declare child pid
+
+    char current_line[MAX_LEN]; //array to store current line read
+    int line_count = 0; //counter for line count
+    int cmd_count = 0; //counter for the amount of commands, acts as the index
+    struct timespec start; //record starting time
+
+    //while loop reads from stdin/terminal input
+    while(fgets(current_line, MAX_LEN, stdin) && line_count < MAX_CHAR){
+        //convert to C string
+        if (current_line[strlen(current_line) - 1] == '\n'){
+            current_line[strlen(current_line) - 1] = '\0';
+        }
+
+        cmd_count++;
+
+        //record the starting time
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        //spawn a child
+        child = fork();
+
+        //exit if child process did not spawn
+        if(child < 0){
+            fprintf(stderr, "Fork failed");
+            exit(1);
+        }
+        //child process
+        else if (child == 0){
+            //split current line into parts by words
+            char *argument[MAX_LEN + 1] = {0};
+            char *word = strtok(current_line, " ");
+            int counter = 0;
+
+            //separate each word based on space
+            while(word != NULL && counter < MAX_LEN - 1){
+                argument[counter] = word;
+                counter++;
+                word = strtok(NULL, " ");
+            }
+            argument[counter++] = NULL; //set end of array to NULL
+
+            char output_file[MAX_LEN]; // array to hold stdout
+            char error_file[MAX_LEN]; // array to hold stderr
+
+            //push the logs to their respective files
+            sprintf(output_file, "%d.out", (int) getpid());
+            sprintf(error_file, "%d.err", (int) getpid());
+
+            //open log files
+            int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+            int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+
+            //send fd_1 to PID.out file and fd_2 to PID.err for the PID
+            dup2(fd_1, 1);
+            dup2(fd_2, 2);
+
+            fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
+
+            fflush(stdout); //clear output buffer
+
+            //check if execvp ran properly
+            if(execvp(argument[0], argument) == -1){
+                perror(argument[0]);
+                exit(2);
+            }
+        }
+        else if (child > 0){
+            struct *nlist entry_new = insert(current_line, child, cmd_count);
+            entry_new->start_time = start;
+        }
+    }
+
+    struct timespec finish;
+    double elasped_time;
+    struct *nlist entry;
+
+    //parent process
+    while((child = wait(&status)) > 0){
+        //record finished time
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+
+        //lookup entry
+        entry = lookup(child);
+
+        char output_file[MAX_LEN] = {0}; // array to hold stdout
+        char error_file[MAX_LEN] = {0}; // array to hold stderr
+
+        //push the logs to their respective files
+        sprintf(output_file, "%d.out", child);
+        sprintf(error_file, "%d.err", child);
+
+        //open output file and send fd_1 to PID.out file
+        int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+        dup2(fd_1, 1);
+
+        fflush(stdout); //clear output buffer
+
+        //open err file and send fd_2 to PID.err file
+        int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+        dup2(fd_2, 2);
+
+        //if process exited normally
+        if (WIFEXITED(status)) {
+            fprintf(stdout, "Finished child %d pid of parent %d\n", child, (int) getpid());
+            fflush(stdout); //clear stdout
+            fprintf(stderr, "Exited with exitcode = %d\n", WEXITSTATUS(status));
+        }
+        //if process killed
+        else if (WIFSIGNALED(status)) {
+                fprintf(stderr, "Killed with signal %d\n", WTERMSIG(status));
+        }
+
+        //calculate elasped time
+        elasped_time = finish - entry->start_time;
+
+        if(elasped_time <= 2){
+            fprintf(stderr, "Spawning too fast\n");
+        }
+
+        //decide if need to restart process
+        if (elasped_time > 2){
+            fprintf(stdout, "RESTARTING\n");
+
+            //record start time
+            clock_gettime(CLOCK_MONOTONIC, &start);
+
+            //spawn child
+            child = fork();
+
+            //exit if child process did not spawn
+            if(child < 0){
+                fprintf(stderr, "Fork failed");
+                exit(1);
+            }
+
+            //child process
+            else if(child == 0){
+                char output_file[MAX_LEN]; // array to hold stdout
+                char error_file[MAX_LEN]; // array to hold stderr
+
+                //push the logs to their respective files
+                sprintf(output_file, "%d.out", (int) getpid());
+                sprintf(error_file, "%d.err", (int) getpid());
+
+                //open log files
+                int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+                int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
+
+                //send fd_1 to PID.out file and fd_2 to PID.err for the PID
+                dup2(fd_1, 1);
+                dup2(fd_2, 2);
+
+                fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
+
+                execvp(entry->command);
+            }
+
+            //parent process
+            else if (child > 0){
+                struct *nlist entry_new = insert(current_line, child, cmd_count);
+                entry_new->start_time = start;
+            }
+
+        }
+
+    }
+
+    line_count++; //increase line count
+
+    return 0;
 }
