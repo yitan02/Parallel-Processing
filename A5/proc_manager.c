@@ -12,16 +12,16 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 
-struct nlist { /* table entry: */
+/* table entry: */
+struct nlist {
     struct nlist *next; /* next entry in chain */
-    char *name; /* defined name, can remove */
-    char *defn; /* replacement text, can remove */
-    /* starttime */
-    /* finishtime */
-    /* index // this is the line index in the input text file */
-    /* pid // the process id. you can use the pid result of wait to lookup in the hashtable */
-    /* char *command; // command. This is good to store for when you decide to restart a command */
+    struct timespec start_time;
+    struct timespec finish_time;
+    int index; // this is the line index in the input text file */
+    int pid; // the process id. you can use the pid result of wait to lookup in the hashtable */
+    char *command; // command. This is good to store for when you decide to restart a command */
 };
 
 #define HASHSIZE 101
