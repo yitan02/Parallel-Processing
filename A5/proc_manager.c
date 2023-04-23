@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <stdbool.h>
 
 /* table entry: */
 struct nlist {
@@ -111,6 +112,9 @@ implementation. **/
 //     return p;
 // }
 
+#define MAX_CHAR 100
+#define MAX_LEN 30
+
 void execvp_func(char command[], bool restart, int cmd_count){
     //split current line into parts by words
     char *argument[MAX_LEN + 1] = {0};
@@ -140,6 +144,7 @@ void execvp_func(char command[], bool restart, int cmd_count){
     dup2(fd_1, 1);
     dup2(fd_2, 2);
 
+    // if restart is true, print RESTARTING to stdout and set cmd_count to 1
     if(restart){
         fprintf(stdout, "RESTARTING\n");
         cmd_count = 1;
@@ -156,8 +161,6 @@ void execvp_func(char command[], bool restart, int cmd_count){
     }
 }
 
-#define MAX_CHAR 100
-#define MAX_LEN 30
 
 /**
  * Read from stdin and run the commands in parallel
@@ -195,20 +198,23 @@ int main(int argc, char *argv[]){
             fprintf(stderr, "Fork failed");
             exit(1);
         }
+
         //child process
         else if (child == 0){
+            //call the execvp_func
+            execvp_func(current_line, false, cmd_count);
 
-            }
         }
         else if (child > 0){
+            //add a new entry to hash table
             struct nlist* entry_new = insert(current_line, child, cmd_count);
             entry_new->start_time = start;
         }
     }
 
-    struct timespec finish;
-    double elasped_time;
-    struct nlist* entry;
+    struct timespec finish; //initialize to hold finished time
+    double elasped_time; // variable to hold elapsed time
+    struct nlist* entry; // used to find entry in hash table
 
     //parent process
     while((child = wait(&status)) > 0){
@@ -245,7 +251,7 @@ int main(int argc, char *argv[]){
         //if process exited normally
         if (WIFEXITED(status)) {
             fprintf(stdout, "Finished child %d pid of parent %d\n", child, (int) getpid());
-            fprintf(stdout, "Finished at %ld, runtime duration %f\n", entry->finish_time.tv_sec, elasped_time);
+            fprintf(stdout, "Finished at %ld, runtime duration %0.2f\n", entry->finish_time.tv_sec, elasped_time);
             fflush(stdout); //clear stdout
             fprintf(stderr, "Exited with exitcode = %d\n", WEXITSTATUS(status));
 
@@ -264,9 +270,6 @@ int main(int argc, char *argv[]){
 
         //decide if need to restart process
         if (elasped_time > 2){
-
-            fprintf(stdout, "RESTARTING\n");
-
             //record start time
             clock_gettime(CLOCK_MONOTONIC, &start);
 
@@ -281,11 +284,13 @@ int main(int argc, char *argv[]){
 
             //child process
             else if(child == 0){
-
+                //call execvp_func on the command that needs to restart
+                execvp_func(entry->command, true, cmd_count);
             }
 
             //parent process
             else if (child > 0){
+                //add new entry to hash table
                 struct nlist* entry_new = insert(current_line, child, cmd_count);
                 entry_new->start_time = start;
             }
