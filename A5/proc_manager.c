@@ -197,13 +197,16 @@ int main(int argc, char *argv[]){
     }
 
     struct timespec finish;
-    double elasped_time;
+    long elasped_time;
     struct nlist* entry;
 
     //parent process
     while((child = wait(&status)) > 0){
         //record finished time
         clock_gettime(CLOCK_MONOTONIC, &finish);
+
+        //store record finished time
+        entry->finish_time = finish;
 
         //lookup entry
         entry = lookup(child);
@@ -225,9 +228,13 @@ int main(int argc, char *argv[]){
         int fd_2 = open(error_file, O_RDWR | O_CREAT | O_APPEND, 0777);
         dup2(fd_2, 2);
 
+        //calculate elasped time
+        elasped_time = finish.tv_sec - start.tv_sec;
+
         //if process exited normally
         if (WIFEXITED(status)) {
             fprintf(stdout, "Finished child %d pid of parent %d\n", child, (int) getpid());
+            fprintf(stdout, "Finished at %ld, runtime duration %ld\n", entry->finish_time.tv_sec, elasped_time);
             fflush(stdout); //clear stdout
             fprintf(stderr, "Exited with exitcode = %d\n", WEXITSTATUS(status));
         }
@@ -236,8 +243,7 @@ int main(int argc, char *argv[]){
                 fprintf(stderr, "Killed with signal %d\n", WTERMSIG(status));
         }
 
-        //calculate elasped time
-        elasped_time = finish.tv_sec - start.tv_sec;
+
 
         if(elasped_time <= 2){
             fprintf(stderr, "Spawning too fast\n");
