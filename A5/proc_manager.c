@@ -2,11 +2,9 @@
  * Description: This program executes multiple commands with timer.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/23/23
+ * Last modified date: 4/24/23
  * Creation date: 4/21/23
  **/
-
-//note: ask about time and should it stop by itself?
 
 #include <stdio.h>
 #include <unistd.h>
@@ -34,16 +32,11 @@ struct nlist {
 static struct nlist *hashtab[HASHSIZE]; /* pointer table */
 
 /* This is the hash function: form hash value for string s */
-/* TODO change to: unsigned hash(int pid) */
-/* TODO modify to hash by pid . */
-/* You can use a simple hash function: pid % HASHSIZE */
 unsigned hash(int pid) {
     return pid % HASHSIZE;
 }
 
 /* lookup: look for pid in hashtab */
-/* TODO change to lookup by pid: struct nlist *lookup(int pid) */
-/* TODO modify to search by pid, you won't need strcmp anymore */
 /* This is traversing the linked list under a slot of the hash
 table. The array position to look in is returned by the hash
 function */
@@ -57,10 +50,6 @@ struct nlist *lookup(int pid) {
     return NULL; /* not found */
 }
 
-//char *strdup(char *);
-/* insert: put (name, defn) in hashtab */
-/* TODO: change this to insert in hash table the info for a new pid and its command */
-/* TODO: change signature to: struct nlist *insert(char *command, int pid, int index). */
 /* This insert returns a nlist node. Thus when you call insert in your main function */
 /* you will save the returned nlist node in a variable (mynode).*/
 /* Then you can set the starttime and finishtime from your main function: */
@@ -69,7 +58,7 @@ struct nlist *insert(char *command, int pid, int index) {
     struct nlist *np;
     unsigned hashval;
 
-    //TODO change to lookup by pid. There are 2 cases:
+    //Lookup by pid. There are 2 cases:
     if ((np = lookup(pid)) == NULL) {
     /* case 1: the pid is not found, so you have to create it with malloc. Then you want to set
     the pid, command and index */
@@ -106,22 +95,14 @@ struct nlist *insert(char *command, int pid, int index) {
     return np;
 }
 
-/** You might need to duplicate the command string to ensure you
-don't overwrite the previous command each time a new line is read
-from the input file. Or you might not need to duplicate it. It depends on your
-implementation. **/
-// char* strdup(char* s){ /* make a duplicate of s */
-//     char *p;
-//     p = (char *) malloc(strlen(s)+1); /* +1 for */
-//     if (p != NULL){
-//         strcpy(p, s);
-//     }
-//     return p;
-// }
-
-//#define MAX_CHAR 100
 #define MAX_LEN 30
 
+/*
+ * Function that runs the execvp of the command and create stdout and stderr files for them
+ * Assumption: assumes command line size is 30
+ * Input: command char array, boolean restart, int cmd_count (which is the index)
+ * Output: stdout and stderr files
+ */
 void execvp_func(char command[], bool restart, int cmd_count){
     //split current line into parts by words
     char *argument[MAX_LEN + 1] = {0};
@@ -151,7 +132,7 @@ void execvp_func(char command[], bool restart, int cmd_count){
     dup2(fd_1, 1);
     dup2(fd_2, 2);
 
-    // if restart is true, print RESTARTING to stdout and set cmd_count to 1
+    // if restart is true, print RESTARTING to stdout and stderr and set cmd_count to 1
     if(restart){
         fprintf(stdout, "RESTARTING\n");
         fprintf(stderr, "RESTARTING\n");
@@ -171,7 +152,7 @@ void execvp_func(char command[], bool restart, int cmd_count){
 
 
 /**
- * Read from stdin and run the commands in parallel
+ * Read from stdin, run the commands in parallel and restart command if it lasts more than 2 seconds.
  * assumptions: there is at least one line of command of 2 parameters
  * input: commands
  * output: command results in output and error file
@@ -182,12 +163,10 @@ int main(int argc, char *argv[]){
     pid_t child; //declare child pid
 
     char current_line[MAX_LEN]; //array to store current line read
-    int line_count = 0; //counter for line count
     int cmd_count = 0; //counter for the amount of commands, acts as the index
     struct timespec start; //record starting time
 
     //while loop reads from stdin/terminal input
-    // && line_count < MAX_CHAR
     while(fgets(current_line, MAX_LEN, stdin)){
         //convert to C string
         if (current_line[strlen(current_line) - 1] == '\n'){
@@ -222,11 +201,13 @@ int main(int argc, char *argv[]){
     }
 
     struct timespec finish; //initialize to hold finished time
-    double elasped_time; // variable to hold elapsed time
-    struct nlist* entry; // used to find entry in hash table
+    double elasped_time; //variable to hold elapsed time
+    struct nlist* entry; //used to find entry in hash table
 
     //parent process
-    while((child = wait(&status)) > 0){
+    while((child = wait(&status)) >= 0){
+
+       if(child>0){
         //record finished time
         clock_gettime(CLOCK_MONOTONIC, &finish);
 
@@ -278,7 +259,7 @@ int main(int argc, char *argv[]){
         }
 
         //decide if need to restart process
-        while (elasped_time > 2){
+        if (elasped_time > 2){
             //record start time
             clock_gettime(CLOCK_MONOTONIC, &start);
 
@@ -304,9 +285,7 @@ int main(int argc, char *argv[]){
                 entry_new->start_time = start;
             }
         }
+       }
     }
-
-    line_count++; //increase line count
-
     return 0;
 }
