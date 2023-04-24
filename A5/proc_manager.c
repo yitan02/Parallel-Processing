@@ -2,9 +2,11 @@
  * Description: This program executes multiple commands with timer.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/22/23
+ * Last modified date: 4/23/23
  * Creation date: 4/21/23
  **/
+
+//note: ask about time and should it stop by itself?
 
 #include <stdio.h>
 #include <unistd.h>
@@ -20,8 +22,8 @@
 /* table entry: */
 struct nlist {
     struct nlist *next; /* next entry in chain */
-    struct timespec start_time;
-    struct timespec finish_time;
+    struct timespec start_time; //start time
+    struct timespec finish_time; //finish time
     int index; // this is the line index in the input text file */
     int pid; // the process id. you can use the pid result of wait to lookup in the hashtable */
     char *command; // command. This is good to store for when you decide to restart a command */
@@ -92,10 +94,15 @@ struct nlist *insert(char *command, int pid, int index) {
     do nothing, or you may want to set again the command and index
     (depends on your implementation). */
     else {
+        //set the command
+        if ((np->command = strdup(command)) == NULL){
+            return NULL;
+        }
 
+        //set index
+        np->index = index;
     }
 
-    //free((void *) np->defn); /*free previous defn */
     return np;
 }
 
@@ -112,7 +119,7 @@ implementation. **/
 //     return p;
 // }
 
-#define MAX_CHAR 100
+//#define MAX_CHAR 100
 #define MAX_LEN 30
 
 void execvp_func(char command[], bool restart, int cmd_count){
@@ -147,6 +154,7 @@ void execvp_func(char command[], bool restart, int cmd_count){
     // if restart is true, print RESTARTING to stdout and set cmd_count to 1
     if(restart){
         fprintf(stdout, "RESTARTING\n");
+        fprintf(stderr, "RESTARTING\n");
         cmd_count = 1;
     }
 
@@ -179,7 +187,8 @@ int main(int argc, char *argv[]){
     struct timespec start; //record starting time
 
     //while loop reads from stdin/terminal input
-    while(fgets(current_line, MAX_LEN, stdin) && line_count < MAX_CHAR){
+    // && line_count < MAX_CHAR
+    while(fgets(current_line, MAX_LEN, stdin)){
         //convert to C string
         if (current_line[strlen(current_line) - 1] == '\n'){
             current_line[strlen(current_line) - 1] = '\0';
@@ -224,11 +233,11 @@ int main(int argc, char *argv[]){
         //lookup entry
         entry = lookup(child);
 
-        //store record finished time
+        //store finished time
         entry->finish_time = finish;
 
         //calculate elasped time
-        elasped_time = finish.tv_sec - entry->start_time.tv_sec;
+        elasped_time = entry->finish_time.tv_sec - entry->start_time.tv_sec;
 
         char output_file[MAX_LEN] = {0}; // array to hold stdout
         char error_file[MAX_LEN] = {0}; // array to hold stderr
@@ -294,9 +303,7 @@ int main(int argc, char *argv[]){
                 struct nlist* entry_new = insert(current_line, child, cmd_count);
                 entry_new->start_time = start;
             }
-
         }
-
     }
 
     line_count++; //increase line count
