@@ -278,7 +278,7 @@ int main(int argc, char *argv[]){
         }
 
         //decide if need to restart process
-        if (elasped_time > 2){
+        while (elasped_time > 2){
             //record start time
             clock_gettime(CLOCK_MONOTONIC, &start);
 
