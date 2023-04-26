@@ -2,9 +2,11 @@
  * Description: This program executes multiple commands with timer.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/24/23
+ * Last modified date: 4/25/23
  * Creation date: 4/21/23
  **/
+
+//figure why it isn't restarting properly
 
 #include <stdio.h>
 #include <unistd.h>
@@ -136,10 +138,11 @@ void execvp_func(char command[], bool restart, int cmd_count){
     if(restart){
         fprintf(stdout, "RESTARTING\n");
         fprintf(stderr, "RESTARTING\n");
-        cmd_count = 1;
     }
 
     fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
+
+    fprintf(stdout,"%s\n", command);
 
     fflush(stdout); //clear output buffer
 
@@ -175,7 +178,7 @@ int main(int argc, char *argv[]){
 
         cmd_count++;
 
-        //record the starting time
+        //record the current time as starting time
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         //spawn a child
@@ -200,14 +203,14 @@ int main(int argc, char *argv[]){
         }
     }
 
-    struct timespec finish; //initialize to hold finished time
-    double elasped_time; //variable to hold elapsed time
+
     struct nlist* entry; //used to find entry in hash table
 
     //parent process
     while((child = wait(&status)) >= 0){
+        struct timespec finish; //initialize to hold finished time
+        double elasped_time; //variable to hold elapsed time
 
-       if(child>0){
         //record finished time
         clock_gettime(CLOCK_MONOTONIC, &finish);
 
@@ -275,7 +278,7 @@ int main(int argc, char *argv[]){
             //child process
             else if(child == 0){
                 //call execvp_func on the command that needs to restart
-                execvp_func(entry->command, true, cmd_count);
+                execvp_func(entry->command, true, entry->index);
             }
 
             //parent process
@@ -285,7 +288,6 @@ int main(int argc, char *argv[]){
                 entry_new->start_time = start;
             }
         }
-       }
     }
     return 0;
 }
