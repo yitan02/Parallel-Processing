@@ -2,11 +2,9 @@
  * Description: This program executes multiple commands with timer.
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 4/25/23
+ * Last modified date: 4/26/23
  * Creation date: 4/21/23
  **/
-
-//figure why it isn't restarting properly
 
 #include <stdio.h>
 #include <unistd.h>
@@ -15,7 +13,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <stdbool.h>
 
@@ -102,10 +99,10 @@ struct nlist *insert(char *command, int pid, int index) {
 /*
  * Function that runs the execvp of the command and create stdout and stderr files for them
  * Assumption: assumes command line size is 30
- * Input: command char array, boolean restart, int cmd_count (which is the index)
+ * Input: command char array, boolean restart, int index
  * Output: stdout and stderr files
  */
-void execvp_func(char command[], bool restart, int cmd_count){
+void execvp_func(char command[], bool restart, int index){
     //split current line into parts by words
     char *argument[MAX_LEN + 1] = {0};
     char *word = strtok(command, " ");
@@ -134,15 +131,13 @@ void execvp_func(char command[], bool restart, int cmd_count){
     dup2(fd_1, 1);
     dup2(fd_2, 2);
 
-    // if restart is true, print RESTARTING to stdout and stderr and set cmd_count to 1
+    // if restart is true, print RESTARTING to stdout and stderr
     if(restart){
         fprintf(stdout, "RESTARTING\n");
         fprintf(stderr, "RESTARTING\n");
     }
 
-    fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", cmd_count, getpid(), getppid());
-
-    fprintf(stdout,"%s\n", command);
+    fprintf(stdout,"Starting command %d: child %d pid of parent %d\n", index, getpid(), getppid());
 
     fflush(stdout); //clear output buffer
 
@@ -163,59 +158,58 @@ void execvp_func(char command[], bool restart, int cmd_count){
 int main(int argc, char *argv[]){
 
     int status; //declare status
-    pid_t child; //declare child pid
+    pid_t pid; //declare pid
 
     char current_line[MAX_LEN]; //array to store current line read
-    int cmd_count = 0; //counter for the amount of commands, acts as the index
+    int index = 0; //counter for the amount of commands
     struct timespec start; //record starting time
 
     //while loop reads from stdin/terminal input
-    while(fgets(current_line, MAX_LEN, stdin)){
+    while(fgets(current_line, MAX_LEN, stdin) != NULL){
         //convert to C string
         if (current_line[strlen(current_line) - 1] == '\n'){
             current_line[strlen(current_line) - 1] = '\0';
         }
 
-        cmd_count++;
+        index++;
 
         //record the current time as starting time
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         //spawn a child
-        child = fork();
+        pid = fork();
 
         //exit if child process did not spawn
-        if(child < 0){
+        if(pid < 0){
             fprintf(stderr, "Fork failed");
             exit(1);
         }
 
         //child process
-        else if (child == 0){
+        else if (pid == 0){
             //call the execvp_func
-            execvp_func(current_line, false, cmd_count);
+            execvp_func(current_line, false, index);
 
         }
-        else if (child > 0){
+        else if (pid > 0){
             //add a new entry to hash table
-            struct nlist* entry_new = insert(current_line, child, cmd_count);
+            struct nlist* entry_new = insert(current_line, pid, index);
             entry_new->start_time = start;
         }
     }
 
 
     struct nlist* entry; //used to find entry in hash table
+    struct timespec finish; //initialize to hold finished time
+    double elasped_time; //variable to hold elapsed time
 
     //parent process
-    while((child = wait(&status)) >= 0){
-        struct timespec finish; //initialize to hold finished time
-        double elasped_time; //variable to hold elapsed time
-
+    while((pid = wait(&status)) >= 0){
         //record finished time
         clock_gettime(CLOCK_MONOTONIC, &finish);
 
         //lookup entry
-        entry = lookup(child);
+        entry = lookup(pid);
 
         //store finished time
         entry->finish_time = finish;
@@ -227,8 +221,8 @@ int main(int argc, char *argv[]){
         char error_file[MAX_LEN] = {0}; // array to hold stderr
 
         //push the logs to their respective files
-        sprintf(output_file, "%d.out", child);
-        sprintf(error_file, "%d.err", child);
+        sprintf(output_file, "%d.out", pid);
+        sprintf(error_file, "%d.err", pid);
 
         //open output file and send fd_1 to PID.out file
         int fd_1 = open(output_file, O_RDWR | O_CREAT | O_APPEND, 0777);
@@ -243,7 +237,7 @@ int main(int argc, char *argv[]){
 
         //if process exited normally
         if (WIFEXITED(status)) {
-            fprintf(stdout, "Finished child %d pid of parent %d\n", child, (int) getpid());
+            fprintf(stdout, "Finished child %d pid of parent %d\n", pid, (int) getpid());
             fprintf(stdout, "Finished at %ld, runtime duration %0.2f\n", entry->finish_time.tv_sec, elasped_time);
             fflush(stdout); //clear stdout
             fprintf(stderr, "Exited with exitcode = %d\n", WEXITSTATUS(status));
@@ -267,24 +261,24 @@ int main(int argc, char *argv[]){
             clock_gettime(CLOCK_MONOTONIC, &start);
 
             //spawn child
-            child = fork();
+            pid = fork();
 
             //exit if child process did not spawn
-            if(child < 0){
+            if(pid < 0){
                 fprintf(stderr, "Fork failed");
                 exit(1);
             }
 
             //child process
-            else if(child == 0){
+            else if(pid == 0){
                 //call execvp_func on the command that needs to restart
                 execvp_func(entry->command, true, entry->index);
             }
 
             //parent process
-            else if (child > 0){
+            else if (pid > 0){
                 //add new entry to hash table
-                struct nlist* entry_new = insert(current_line, child, cmd_count);
+                struct nlist* entry_new = insert(entry->command, pid, entry->index);
                 entry_new->start_time = start;
             }
         }
