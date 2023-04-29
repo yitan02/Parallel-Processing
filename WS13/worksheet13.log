@@ -1,3 +1,7 @@
+ What difference do you observe between the two directories?
+  The orders of the files are different between the two directories. The date displayed from filedir2 is today's date since the files were copied over.
+ 
+ 
  1998  stat access.c
  1999  find . -name zap
  2000  ls
