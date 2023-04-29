@@ -1,0 +1,20 @@
+ 1998  stat access.c
+ 1999  find . -name zap
+ 2000  ls
+ 2001  find . -name '*.c'
+ 2002  ls
+ 2003  wc zap.c
+ 2004  mv mycd.c filedir2
+ 2005  ls
+ 2006  man
+ 2007  pwd access.c
+ 2008  rm access.c
+ 2009  ls
+ 2010  locate -l *unlink.c*
+ 2011  sudo apt install plocate
+ 2012  locate -l *unlink.c*
+ 2013  ls
+ 2014  du 
+ 2015  du -h /filedir1
+ 2016  du -h cdpwd.c
+ 2017  df 
