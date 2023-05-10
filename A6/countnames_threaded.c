@@ -2,9 +2,11 @@
  * Description: This program executes count names with threads
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 5/6/23
+ * Last modified date: 5/9/23
  * Creation date: 5/6/23
  **/
+
+//understand mutex locks
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,7 +134,7 @@ int timer(void){
 /*********************************************************
 // function main
 *********************************************************/
-int main(){
+int main(int argc, char *argv[]){
 
     //TODO similar interface as A2: give as command-line arguments three filenames of numbers (the numbers in the files are newline-separated).
     printf("create first thread");
@@ -152,6 +154,12 @@ int main(){
     print_nodes(HEAD_NODE);
 
     //TODO print out the sum variable with the sum of all the numbers
+
+    //print error if more than two files or one file is provided
+    if(argc > 3 || argc == 1){
+        fprintf(stderr, "Only two files are accepted\n");
+        exit(2);
+    }
 
     FILE* names_file  = fopen(argv[i], "r"); //open file mentioned in command line
 
@@ -175,11 +183,16 @@ int main(){
     char current_line[MAX_LEN]; //declare array to hold contents of current line in buffer
     bool name_found = 0; //0 for false; 1 for true
     int line_count = 0; // keeps track of line
-    int j = 0; // names array tracker
+    int j = 0; // names list tracker
     bool empty_line_found = 0; // tracker for empty line found
+
+
+    //NAME_STRUCT temp_countnames[MAX_NAMES] = {{{'\0', 0}}};
 
     //read file and update name array and counter array accordingly
     while (fgets(current_line, MAX_LEN, names_file) != NULL){
+            NODE* curr_node = HEAD_NODE;
+
             //if line is empty; print warning
             if(current_line[0] == '\n' || (current_line[0] == ' ' && current_line[1] == '\n')){
                     printf("Warning - file %s line %d is empty.\n", argv[i], line_count + 1);
@@ -191,36 +204,42 @@ int main(){
                     current_line[strlen(current_line) - 1] = '\0';
             }
 
+
+//             for (int i = 0; i < MAX_NAMES; i++){
+//                 //if name found, increment the name count accordingly in the array
+//                 if (strcmp (current_line, temp_countnames[i].name) == 0 && empty_line_found == 0){
+//                     temp_countnames[i].count++;
+//                     name_found = 1;
+//                 }
+//             }
+
+            int i = 0;
             //check if current name is found or not
-            for (int i = 0; i < MAX_NAMES; i++){
-                //if name found, increment the name count accordingly in the array
-                if (strcmp (current_line, temp_countnames[i].name) == 0 && empty_line_found == 0){
-                    temp_countnames[i].count++;
+            while(i < MAX_NAMES && curr_node = curr_node->next != NULL){
+                //compare the strings
+                if(strcmp(current_line, curr_node->name_count.name) == 0){
+                    curr_node->name_count.count++;
                     name_found = 1;
                 }
+                i++;
             }
 
             //if name is not found and line not empty, add new name in array
             if (name_found == 0 && j < 100 && empty_line_found == 0){
-                    strcpy(temp_countnames[j].name, current_line);
-                    temp_countnames[j].count++;
+                    strcpy(curr_node->name_count.name, current_line);
+                    curr_node->name_count.count++;
                     j++;
             }
             empty_line_found = 0; //reset to false
             name_found = 0; //reset boolean to false
             line_count++; //increment line
+
     }
 
         //close file
         fclose(names_file);
 
-        //write the names and names_count array to the pipe
-        if(write(pipe1[1], temp_countnames, MAX_NAMES * sizeof(my_data)) < 0){
-            fprintf(stderr, "failed to write names to pipe\n");
-        }
-
-        //close writing end of pipe
-        close(pipe1[1]);
+        //is pipe needed?
 
     exit(0);
 }//end main
