@@ -5,7 +5,6 @@
  * Last modified date: 5/9/23
  * Creation date: 5/6/23
  **/
-
 //understand mutex locks
 
 #include <stdio.h>
@@ -41,7 +40,7 @@ THREADDATA* p=NULL;
 
 
 //variable for indexing of messages by the logging function.
-int logindex=0;
+int log_index=0;
 int *logip = &logindex;
 
 //The name counts.
@@ -103,7 +102,7 @@ int timer(void){
     time(&now);
 
     // Convert to local time format and print to stdout
-    printf("Today is : %s", ctime(&now));
+    //printf("Today is : %s", ctime(&now));
 
     // localtime converts a time_t value to calendar time and
     // returns a pointer to a tm structure with its members
@@ -117,14 +116,14 @@ int timer(void){
     month = local->tm_mon + 1; // get month of year (0 to 11)
     year = local->tm_year + 1900; // get year since 1900
 
+    // print current date
+    printf(" %02d/%02d/%d ", day, month, year);
+
     // print local time
     if (hours < 12) // before midday
-        printf("Time is : %02d:%02d:%02d am\n", hours, minutes, seconds);
+        printf("%02d:%02d:%02d am ", hours, minutes, seconds);
     else // after midday
-        printf("Time is : %02d:%02d:%02d pm\n", hours - 12, minutes, seconds);
-
-    // print current date
-    printf("Date is : %02d/%02d/%d\n", day, month, year);
+        printf("%02d:%02d:%02d pm ", hours - 12, minutes, seconds);
 
     return 0;
 }
@@ -136,12 +135,20 @@ int timer(void){
 *********************************************************/
 int main(int argc, char *argv[]){
 
+    //print error if more than two files or one file is provided
+    if(argc > 3 || argc == 1){
+        fprintf(stderr, "Only two files are accepted\n");
+        exit(2);
+    }
+
+    HEAD_NODE = (NODE*) calloc(1, sizeof(NODE)); //allocate memory for head node
+
     //TODO similar interface as A2: give as command-line arguments three filenames of numbers (the numbers in the files are newline-separated).
     printf("create first thread");
-    pthread_create(&tid1,NULL,thread_runner,NULL);
+    pthread_create(&tid1,NULL,thread_runner,argv[1]); //assign first file to thread 1
 
     printf("create second thread");
-    pthread_create(&tid2,NULL,thread_runner,NULL);
+    pthread_create(&tid2,NULL,thread_runner,argv[2]); //assign second file to thread 2
 
     printf("wait for first thread to exit");
     pthread_join(tid1,NULL);
@@ -155,13 +162,73 @@ int main(int argc, char *argv[]){
 
     //TODO print out the sum variable with the sum of all the numbers
 
-    //print error if more than two files or one file is provided
-    if(argc > 3 || argc == 1){
-        fprintf(stderr, "Only two files are accepted\n");
-        exit(2);
+
+
+
+
+        //is pipe needed?
+
+    exit(0);
+}//end main
+
+/**********************************************************************
+// function thread_runner runs inside each thread
+**********************************************************************/
+void* thread_runner(void* file)
+{
+    pthread_t me;
+    me = pthread_self();
+
+    printf("This is thread %ld (p=%p)",me,p);
+
+    pthread_mutex_lock(&tlock2); // critical section starts
+
+    if (p==NULL) {
+        p = (THREADDATA*) malloc(sizeof(THREADDATA));
+        p->creator=me;
     }
 
-    FILE* names_file  = fopen(argv[i], "r"); //open file mentioned in command line
+    pthread_mutex_unlock(&tlock2); // critical section ends
+
+    pthread_mutex_lock(&tlock1); //critical section starts for log index
+    log_index++;
+
+    if (p!=NULL && p->creator==me) {
+        printf("Logindex %d, thread %d, PID %d, ", log_index,me, tid1);
+        timer();
+        printf(": This is thread %ld and I created THREADDATA %p", me, p);
+
+    } else {
+        printf("Logindex %d, thread %d, PID %d, ", log_index, me, tid2);
+        timer();
+        printf(": This is thread %ld and I can access the THREADDATA %p",me,p);
+    }
+
+    pthread_mutex_unlock(&tlock1); //critical section ends for log index
+
+    /**
+    * //TODO implement any thread name counting functionality you need.
+    * Assign one file per thread. Hint: you can either pass each argv filename as a thread_runner argument from main.
+    * Or use the logindex to index argv, since every thread will increment the logindex anyway
+    * when it opens a file to print a log message (e.g. logindex could also index argv)....
+    * //Make sure to use any mutex locks appropriately
+    */
+
+    // TODO use mutex to make this a start of a critical section
+    pthread_mutex_lock(&tlock3); // critical section starts
+
+    if (p!=NULL && p->creator==me) {
+        printf("This is thread %ld and I delete THREADDATA",me);
+    /**
+    * TODO Free the THREADATA object.
+    * Freeing should be done by the same thread that created it.
+    * See how the THREADDATA was created for an example of how this is done.
+    */
+    } else {
+        printf("This is thread %ld and I can access the THREADDATA",me);
+    }
+
+    FILE* names_file  = fopen((char*) file, "r"); //open file mentioned in command line
 
     //if file doesn't exist, print error message and exit as 1
     if (names_file == NULL){
@@ -236,60 +303,8 @@ int main(int argc, char *argv[]){
 
     }
 
-        //close file
-        fclose(names_file);
-
-        //is pipe needed?
-
-    exit(0);
-}//end main
-/**********************************************************************
-// function thread_runner runs inside each thread
-**********************************************************************/
-void* thread_runner(void* x)
-{
-    pthread_t me;
-    me = pthread_self();
-
-    printf("This is thread %ld (p=%p)",me,p);
-
-    pthread_mutex_lock(&tlock2); // critical section starts
-
-    if (p==NULL) {
-        p = (THREADDATA*) malloc(sizeof(THREADDATA));
-        p->creator=me;
-    }
-
-    pthread_mutex_unlock(&tlock2); // critical section ends
-
-    if (p!=NULL && p->creator==me) {
-        printf("This is thread %ld and I created THREADDATA %p",me,p);
-
-    } else {
-        printf("This is thread %ld and I can access the THREADDATA %p",me,p);
-    }
-
-    /**
-    * //TODO implement any thread name counting functionality you need.
-    * Assign one file per thread. Hint: you can either pass each argv filename as a thread_runner argument from main.
-    * Or use the logindex to index argv, since every thread will increment the logindex anyway
-    * when it opens a file to print a log message (e.g. logindex could also index argv)....
-    * //Make sure to use any mutex locks appropriately
-    */
-
-    // TODO use mutex to make this a start of a critical section
-    pthread_mutex_lock(&tlock3); // critical section starts
-
-    if (p!=NULL && p->creator==me) {
-        printf("This is thread %ld and I delete THREADDATA",me);
-    /**
-    * TODO Free the THREADATA object.
-    * Freeing should be done by the same thread that created it.
-    * See how the THREADDATA was created for an example of how this is done.
-    */
-    } else {
-        printf("This is thread %ld and I can access the THREADDATA",me);
-    }
+    //close file
+    fclose(names_file);
 
     // TODO critical section ends
     pthread_mutex_unlock(&tlock3);
