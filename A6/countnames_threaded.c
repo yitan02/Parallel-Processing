@@ -6,6 +6,13 @@
  * Creation date: 5/6/23
  **/
 
+/*****************************************
+//CS149 SP23
+//Template for assignment 6
+//San Jose State University
+//originally prepared by Bill Andreopoulos
+*****************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,14 +99,19 @@ void print_nodes(NODE* head){
     NODE* temp = head;
 
     //while the next node is not empty, print the name and the count
-    while(temp->next != NULL){
+    while(temp != NULL){
         printf("%s: %d\n", temp->name_count.name, temp->name_count.count);
         temp = temp->next;
     }
     return;
 }
 
-// Print current date and time in C
+/*
+ * Prints the date and time
+ * Assumption: none
+ * Input: none
+ * Output: none
+ */
 int timer(void){
     // variables to store date and time components
     int hours, minutes, seconds, day, month, year;
@@ -110,9 +122,6 @@ int timer(void){
     // Obtain current time
     // time() returns the current time of the system as a time_t value
     time(&now);
-
-    // Convert to local time format and print to stdout
-    //printf("Today is : %s", ctime(&now));
 
     // localtime converts a time_t value to calendar time and
     // returns a pointer to a tm structure with its members
@@ -138,20 +147,58 @@ int timer(void){
     return 0;
 }
 
+/*
+ * Add name to the list if it is a new name and set its count to 1
+ * Assumption: none
+ * Input: head node, line read from the file
+ * Output: none
+ */
+void add_node(NODE *head, char* line){
+    // make a new node
+    NODE* new_node = (NODE*) malloc(sizeof(NODE));
+
+    strcpy(new_node->name_count.name, line); //copy current line to line
+    new_node->name_count.count = 1; //set count to 1
+
+    //set new node to head
+    new_node->next = NULL;
+
+    //set new node to head if head is null
+    if(head == NULL){
+        head = new_node;
+    }
+    //else find an empty node in the list and append it to the list
+    else{
+        NODE* temp = head; //temp node to traverse the list
+
+        //traverse the linked list to find empty node
+        while(temp->next != NULL){
+            temp = temp->next;
+        }
+        temp->next = new_node;
+    }
+
+    return;
+}
+
 #define MAX_LEN 30
 #define MAX_NAMES 100
-/*********************************************************
-// function main
-*********************************************************/
+/*
+ * Prints the necessary messages for terminal
+ * Assumption: User passes in 2 name files to run
+ * Input: Name files
+ * Output: name counts
+ */
 int main(int argc, char *argv[]){
-
-    //print error if more than two files or one file is provided
-    if(argc > 3 || argc == 1){
+    //If exactly 2 files are not provided, print error
+    if(argc != 3){
         fprintf(stderr, "Only two files are accepted\n");
         exit(2);
     }
 
     HEAD_NODE = (NODE*) calloc(1, sizeof(NODE)); //allocate memory for head node
+
+    printf("===================== Log Messages =====================\n");
 
     printf("create first thread\n");
     pthread_create(&tid1,NULL,thread_runner,argv[1]); //assign first file to thread 1
@@ -167,48 +214,20 @@ int main(int argc, char *argv[]){
     pthread_join(tid2,NULL);
     printf("second thread exited\n");
 
+    printf("===================== Name Counts =====================\n");
     print_nodes(HEAD_NODE->next); //HEAD_NODE is NULL so start with next node
 
-    free_nodes(HEAD_NODE);
+    free_nodes(HEAD_NODE); //free the nodes
 
     exit(0);
 }//end main
 
-void add_node(NODE *head, char* line){
-    printf("add current line: %s\n", line);
-
-    // make a new node
-    NODE* new_node = (NODE*) malloc(sizeof(NODE));
-
-    strcpy(new_node->name_count.name, line); //copy current line to line
-    new_node->name_count.count = 1; //set count to 1
-
-    //set new node to head
-    new_node->next = NULL;
-
-    if(head == NULL){
-        head = new_node;
-    }
-    else{
-        NODE* temp = head;
-
-        //traverse the linked list to find empty node
-        while(temp->next != NULL){
-            temp = temp->next;
-        }
-        temp->next = new_node;
-    }
-
-    printf("new node name: %s\n", new_node->name_count.name);
-    printf("new node name count: %d\n", new_node->name_count.count);
-
-    return;
-
-}
-
-/**********************************************************************
-// function thread_runner runs inside each thread
-**********************************************************************/
+/*
+ * Run threads to read the input files and count the names
+ * Assumption: threads are made
+ * Input: a file
+ * Output: none
+ */
 void* thread_runner(void* file)
 {
     pthread_t me;
@@ -240,16 +259,7 @@ void* thread_runner(void* file)
         timer();
         printf(": This is thread %ld and I can access the THREADDATA %p\n",me,p);
     }
-
     pthread_mutex_unlock(&tlock1); //critical section ends for log index
-
-    /**
-    * //TODO implement any thread name counting functionality you need.
-    * Assign one file per thread. Hint: you can either pass each argv filename as a thread_runner argument from main.
-    * Or use the logindex to index argv, since every thread will increment the logindex anyway
-    * when it opens a file to print a log message (e.g. logindex could also index argv)....
-    * //Make sure to use any mutex locks appropriately
-    */
 
     FILE* names_file  = fopen((char*) file, "r"); //open file mentioned in command line
 
@@ -280,7 +290,7 @@ void* thread_runner(void* file)
         fseek(names_file, 0, SEEK_END); //go to end of file
         //if file is empty, print message and exit as 0
         if (ftell(names_file) == 0){
-            printf("File is empty!\n");
+            printf("%s is empty!\n", (char*) file);
             exit(0);
         }
         fseek(names_file, 0, SEEK_SET); //go back to top of file
@@ -309,20 +319,18 @@ void* thread_runner(void* file)
             pthread_mutex_lock(&tlock3); // critical section starts
 
             int i = 0; //variable for while loop
+
             //check if current name is found or not
             while(i < MAX_NAMES && (curr_node = curr_node->next) != NULL){
                 //compare the strings
                 if(strcmp(current_line, curr_node->name_count.name) == 0){
                     curr_node->name_count.count++; //increment count
                     name_found = 1; // set name found
-                    printf("name found: %s , count updated: %d\n", current_line, curr_node->name_count.count);
                 }
                 i++;
             }
 
             pthread_mutex_unlock(&tlock3); // critical section ends
-
-            printf("current line: %s\n", current_line);
 
             //if name is not found and line not empty, add new name in list
             if (name_found == 0 && j < 100 && empty_line_found == 0){
@@ -359,7 +367,7 @@ void* thread_runner(void* file)
         pthread_mutex_lock(&tlock2); //critical section starts
 
         free((void*) p); //free p
-        p = NULL;
+        p = NULL; //set p to null after freeing to prevent memory leak
 
         pthread_mutex_unlock(&tlock2); //critical section ends
 
@@ -370,7 +378,7 @@ void* thread_runner(void* file)
 
         printf("Logindex %d, thread %ld, PID %d, ", log_index,me, (int) getpid());
         timer();
-        printf(": This is thread %ld and I can access the THREADDATA\n",me);
+        printf(": This is thread %ld and I can access the THREADDATA\n", me);
 
         pthread_mutex_unlock(&tlock1); //critical section ends
 
