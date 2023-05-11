@@ -1,11 +1,10 @@
 /**
- * Description: This program executes count names with threads
+ * Description: This program executes counting names in files with threads
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
  * Last modified date: 5/10/23
  * Creation date: 5/6/23
  **/
-//understand mutex locks
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,16 +16,16 @@
 #include <unistd.h>
 
 //thread mutex lock for access to the log index
-//TODO you need to use this mutexlock for mutual exclusion
+//use this mutexlock for mutual exclusion
 //when you print log messages from each thread
 pthread_mutex_t tlock1 = PTHREAD_MUTEX_INITIALIZER;
 
 //thread mutex lock for critical sections of allocating THREADDATA
-//TODO you need to use this mutexlock for mutual exclusion
+//use this mutexlock for mutual exclusion
 pthread_mutex_t tlock2 = PTHREAD_MUTEX_INITIALIZER;
 
 //thread mutex lock for access to the name counts data structure
-//TODO you need to use this mutexlock for mutual exclusion
+//use this mutexlock for mutual exclusion
 pthread_mutex_t tlock3 = PTHREAD_MUTEX_INITIALIZER;
 
 void* thread_runner(void*);
@@ -66,6 +65,12 @@ struct NAME_NODE{
 typedef struct NAME_NODE NODE;
 static NODE* HEAD_NODE = NULL;
 
+/*
+ * Function that free the nodes in the list
+ * Assumption: none
+ * Input: head node
+ * Output: none
+ */
 void free_nodes(NODE* head){
     //while the current node is not empty, free node
     while (head != NULL){
@@ -76,6 +81,12 @@ void free_nodes(NODE* head){
     free(head); //free the current node
 }
 
+/*
+ * Prints the nodes in the list
+ * Assumption: none
+ * Input: head node
+ * Output: none
+ */
 void print_nodes(NODE* head){
     //set head to HEAD
     NODE* temp = head;
@@ -142,7 +153,6 @@ int main(int argc, char *argv[]){
 
     HEAD_NODE = (NODE*) calloc(1, sizeof(NODE)); //allocate memory for head node
 
-    //TODO similar interface as A2: give as command-line arguments three filenames of numbers (the numbers in the files are newline-separated).
     printf("create first thread\n");
     pthread_create(&tid1,NULL,thread_runner,argv[1]); //assign first file to thread 1
 
