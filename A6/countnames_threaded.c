@@ -83,6 +83,7 @@ void print_nodes(NODE* head){
     //while the next node is not empty, print the name and the count
     while(temp->next != NULL){
         printf("%s: %d\n", temp->name_count.name, temp->name_count.count);
+        temp = temp->next;
     }
     return;
 }
@@ -156,20 +157,16 @@ int main(int argc, char *argv[]){
     pthread_join(tid2,NULL);
     printf("second thread exited\n");
 
-    //print_nodes(HEAD_NODE);
+    print_nodes(HEAD_NODE->next); //HEAD_NODE is NULL so start with next node
 
     free_nodes(HEAD_NODE);
-
-    free(HEAD_NODE);
-
-    //TODO print out the sum variable with the sum of all the numbers
-
-        //is pipe needed?
 
     exit(0);
 }//end main
 
 void add_node(NODE *head, char* line){
+    printf("add current line: %s\n", line);
+
     // make a new node
     NODE* new_node = (NODE*) malloc(sizeof(NODE));
 
@@ -191,6 +188,10 @@ void add_node(NODE *head, char* line){
         }
         temp->next = new_node;
     }
+
+    printf("new node name: %s\n", new_node->name_count.name);
+    printf("new node name count: %d\n", new_node->name_count.count);
+
     return;
 
 }
@@ -248,7 +249,7 @@ void* thread_runner(void* file)
         log_index++;
 
         fprintf(stderr, "Logindex %d, thread %ld, PID %d ", log_index, me, (int) getpid());
-        fprintf(stderr, ": Error cannot open file %s.\n", (char*) names_file);
+        fprintf(stderr, ": Error cannot open file %s.\n", (char*) file);
 
         pthread_mutex_unlock(&tlock1);
 
@@ -256,14 +257,14 @@ void* thread_runner(void* file)
     }
 
     else {
-        pthread_mutex_lock(&tlock1);
+        pthread_mutex_lock(&tlock1); //critical section starts
         log_index++;
 
         printf("Logindex %d, thread %ld, PID %d, ", log_index,me, (int) getpid());
         timer();
-        printf(": opened file %s\n", (char*) names_file);
+        printf(": opened file %s\n", (char*) file);
 
-        pthread_mutex_unlock(&tlock1);
+        pthread_mutex_unlock(&tlock1); //critical section ends
 
         //go to end of file to check if it is empty; if not empty, go back to top
         fseek(names_file, 0, SEEK_END); //go to end of file
@@ -279,9 +280,6 @@ void* thread_runner(void* file)
         int line_count = 0; // keeps track of line
         int j = 0; // names list tracker
         bool empty_line_found = 0; // tracker for empty line found
-
-
-        //NAME_STRUCT temp_countnames[MAX_NAMES] = {{{'\0', 0}}};
 
         //read file and update name array and counter array accordingly
         while (fgets(current_line, MAX_LEN, names_file) != NULL){
@@ -300,42 +298,44 @@ void* thread_runner(void* file)
 
             pthread_mutex_lock(&tlock3); // critical section starts
 
-            int i = 0;
+            int i = 0; //variable for while loop
             //check if current name is found or not
             while(i < MAX_NAMES && (curr_node = curr_node->next) != NULL){
                 //compare the strings
                 if(strcmp(current_line, curr_node->name_count.name) == 0){
-                    curr_node->name_count.count++;
-                    name_found = 1;
+                    curr_node->name_count.count++; //increment count
+                    name_found = 1; // set name found
+                    printf("name found: %s , count updated: %d\n", current_line, curr_node->name_count.count);
                 }
                 i++;
             }
 
             pthread_mutex_unlock(&tlock3); // critical section ends
 
+            printf("current line: %s\n", current_line);
+
             //if name is not found and line not empty, add new name in list
             if (name_found == 0 && j < 100 && empty_line_found == 0){
-                    pthread_mutex_lock(&tlock3);
+                    pthread_mutex_lock(&tlock3); //critical section starts
 
-                    add_node(HEAD_NODE, current_line);
+                    add_node(HEAD_NODE, current_line); //add name
 
-                    pthread_mutex_unlock(&tlock3);
+                    pthread_mutex_unlock(&tlock3); //critical section ends
 
                     j++;
             }
             empty_line_found = 0; //reset to false
             name_found = 0; //reset boolean to false
             line_count++; //increment line
-
         }
 
         //close file
         fclose(names_file);
     }
 
-    pthread_mutex_lock(&tlock2);
+    pthread_mutex_lock(&tlock2); //critical section starts
     if (p!=NULL && p->creator==me) {
-        pthread_mutex_unlock(&tlock2);
+        pthread_mutex_unlock(&tlock2); //critical section ends
 
         pthread_mutex_lock(&tlock1); //critical section starts
         log_index++;
@@ -346,15 +346,15 @@ void* thread_runner(void* file)
 
         pthread_mutex_unlock(&tlock1); //critical section ends
 
-        pthread_mutex_lock(&tlock2);
+        pthread_mutex_lock(&tlock2); //critical section starts
 
         free((void*) p); //free p
         p = NULL;
 
-        pthread_mutex_unlock(&tlock2);
+        pthread_mutex_unlock(&tlock2); //critical section ends
 
     } else {
-        pthread_mutex_unlock(&tlock2);
+        pthread_mutex_unlock(&tlock2); //critical section ends
         pthread_mutex_lock(&tlock1); //critical section ends
         log_index++;
 
