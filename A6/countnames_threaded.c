@@ -2,7 +2,7 @@
  * Description: This program executes count names with threads
  * Author names: Talia Syed, Yinglin Tan
  * Author emails: talia.syed@sjsu.edu, yinglin.tan@sjsu.edu
- * Last modified date: 5/9/23
+ * Last modified date: 5/10/23
  * Creation date: 5/6/23
  **/
 //understand mutex locks
@@ -13,6 +13,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 //thread mutex lock for access to the log index
 //TODO you need to use this mutexlock for mutual exclusion
@@ -41,7 +43,7 @@ THREADDATA* p=NULL;
 
 //variable for indexing of messages by the logging function.
 int log_index=0;
-int *logip = &logindex;
+int *logip = &log_index;
 
 //The name counts.
 // You can use any data structure you like, here are 2 proposals: a linked list OR an array (up to 100 names).
@@ -65,11 +67,9 @@ typedef struct NAME_NODE NODE;
 static NODE* HEAD_NODE = NULL;
 
 void free_nodes(NODE* head){
-
     //while the current node is not empty, free node
     while (head != NULL){
             NODE* temp = head->next; //assign temp node to head's next node
-            free(head->line); //free the line
             free(head); //free the node itself
             head = temp; //set the head to the temp
     }
@@ -78,13 +78,11 @@ void free_nodes(NODE* head){
 
 void print_nodes(NODE* head){
     //set head to HEAD
-    head = HEAD;
+    NODE* temp = head;
 
-    //if the next node is not empty, print the index and the line
-    //recursively call the function to continue printing
-    if(head->next != NULL){
-        printf("%s: %d\n", head->name_count.name, head->name_count.count);
-        print_nodes(head->next);
+    //while the next node is not empty, print the name and the count
+    while(temp->next != NULL){
+        printf("%s: %d\n", temp->name_count.name, temp->name_count.count);
     }
     return;
 }
@@ -144,32 +142,58 @@ int main(int argc, char *argv[]){
     HEAD_NODE = (NODE*) calloc(1, sizeof(NODE)); //allocate memory for head node
 
     //TODO similar interface as A2: give as command-line arguments three filenames of numbers (the numbers in the files are newline-separated).
-    printf("create first thread");
+    printf("create first thread\n");
     pthread_create(&tid1,NULL,thread_runner,argv[1]); //assign first file to thread 1
 
-    printf("create second thread");
+    printf("create second thread\n");
     pthread_create(&tid2,NULL,thread_runner,argv[2]); //assign second file to thread 2
 
-    printf("wait for first thread to exit");
+    printf("wait for first thread to exit\n");
     pthread_join(tid1,NULL);
-    printf("first thread exited");
+    printf("first thread exited\n");
 
-    printf("wait for second thread to exit");
+    printf("wait for second thread to exit\n");
     pthread_join(tid2,NULL);
-    printf("second thread exited");
+    printf("second thread exited\n");
 
-    print_nodes(HEAD_NODE);
+    //print_nodes(HEAD_NODE);
+
+    free_nodes(HEAD_NODE);
+
+    free(HEAD_NODE);
 
     //TODO print out the sum variable with the sum of all the numbers
-
-
-
-
 
         //is pipe needed?
 
     exit(0);
 }//end main
+
+void add_node(NODE *head, char* line){
+    // make a new node
+    NODE* new_node = (NODE*) malloc(sizeof(NODE));
+
+    strcpy(new_node->name_count.name, line); //copy current line to line
+    new_node->name_count.count = 1; //set count to 1
+
+    //set new node to head
+    new_node->next = NULL;
+
+    if(head == NULL){
+        head = new_node;
+    }
+    else{
+        NODE* temp = head;
+
+        //traverse the linked list to find empty node
+        while(temp->next != NULL){
+            temp = temp->next;
+        }
+        temp->next = new_node;
+    }
+    return;
+
+}
 
 /**********************************************************************
 // function thread_runner runs inside each thread
@@ -179,7 +203,7 @@ void* thread_runner(void* file)
     pthread_t me;
     me = pthread_self();
 
-    printf("This is thread %ld (p=%p)",me,p);
+    //printf("This is thread %ld (p=%p)",me,p);
 
     pthread_mutex_lock(&tlock2); // critical section starts
 
@@ -191,17 +215,19 @@ void* thread_runner(void* file)
     pthread_mutex_unlock(&tlock2); // critical section ends
 
     pthread_mutex_lock(&tlock1); //critical section starts for log index
-    log_index++;
-
     if (p!=NULL && p->creator==me) {
-        printf("Logindex %d, thread %d, PID %d, ", log_index,me, tid1);
+        log_index++;
+
+        printf("Logindex %d, thread %ld, PID %d, ", log_index, me, (int) getpid());
         timer();
-        printf(": This is thread %ld and I created THREADDATA %p", me, p);
+        printf(": This is thread %ld and I created THREADDATA %p\n", me, p);
 
     } else {
-        printf("Logindex %d, thread %d, PID %d, ", log_index, me, tid2);
+        log_index++;
+
+        printf("Logindex %d, thread %ld, PID %d, ", log_index, me, (int) getpid());
         timer();
-        printf(": This is thread %ld and I can access the THREADDATA %p",me,p);
+        printf(": This is thread %ld and I can access the THREADDATA %p\n",me,p);
     }
 
     pthread_mutex_unlock(&tlock1); //critical section ends for log index
@@ -214,30 +240,32 @@ void* thread_runner(void* file)
     * //Make sure to use any mutex locks appropriately
     */
 
-    // TODO use mutex to make this a start of a critical section
-    pthread_mutex_lock(&tlock3); // critical section starts
-
-    if (p!=NULL && p->creator==me) {
-        printf("This is thread %ld and I delete THREADDATA",me);
-    /**
-    * TODO Free the THREADATA object.
-    * Freeing should be done by the same thread that created it.
-    * See how the THREADDATA was created for an example of how this is done.
-    */
-    } else {
-        printf("This is thread %ld and I can access the THREADDATA",me);
-    }
-
     FILE* names_file  = fopen((char*) file, "r"); //open file mentioned in command line
 
     //if file doesn't exist, print error message and exit as 1
     if (names_file == NULL){
-        printf("Error: cannot open file.\n");
+        pthread_mutex_lock(&tlock1);
+        log_index++;
+
+        fprintf(stderr, "Logindex %d, thread %ld, PID %d ", log_index, me, (int) getpid());
+        fprintf(stderr, ": Error cannot open file %s.\n", (char*) names_file);
+
+        pthread_mutex_unlock(&tlock1);
+
         exit(1);
     }
 
-    //go to end of file to check if it is empty; if not empty, go back to top
-    if (names_file != NULL) {
+    else {
+        pthread_mutex_lock(&tlock1);
+        log_index++;
+
+        printf("Logindex %d, thread %ld, PID %d, ", log_index,me, (int) getpid());
+        timer();
+        printf(": opened file %s\n", (char*) names_file);
+
+        pthread_mutex_unlock(&tlock1);
+
+        //go to end of file to check if it is empty; if not empty, go back to top
         fseek(names_file, 0, SEEK_END); //go to end of file
         //if file is empty, print message and exit as 0
         if (ftell(names_file) == 0){
@@ -245,24 +273,23 @@ void* thread_runner(void* file)
             exit(0);
         }
         fseek(names_file, 0, SEEK_SET); //go back to top of file
-    }
 
-    char current_line[MAX_LEN]; //declare array to hold contents of current line in buffer
-    bool name_found = 0; //0 for false; 1 for true
-    int line_count = 0; // keeps track of line
-    int j = 0; // names list tracker
-    bool empty_line_found = 0; // tracker for empty line found
+        char current_line[MAX_LEN]; //declare array to hold contents of current line in buffer
+        bool name_found = 0; //0 for false; 1 for true
+        int line_count = 0; // keeps track of line
+        int j = 0; // names list tracker
+        bool empty_line_found = 0; // tracker for empty line found
 
 
-    //NAME_STRUCT temp_countnames[MAX_NAMES] = {{{'\0', 0}}};
+        //NAME_STRUCT temp_countnames[MAX_NAMES] = {{{'\0', 0}}};
 
-    //read file and update name array and counter array accordingly
-    while (fgets(current_line, MAX_LEN, names_file) != NULL){
+        //read file and update name array and counter array accordingly
+        while (fgets(current_line, MAX_LEN, names_file) != NULL){
             NODE* curr_node = HEAD_NODE;
 
             //if line is empty; print warning
             if(current_line[0] == '\n' || (current_line[0] == ' ' && current_line[1] == '\n')){
-                    printf("Warning - file %s line %d is empty.\n", argv[i], line_count + 1);
+                    printf("Warning - file %s line %d is empty.\n", (char*) names_file, line_count + 1);
                     empty_line_found = 1;
             }
 
@@ -271,18 +298,11 @@ void* thread_runner(void* file)
                     current_line[strlen(current_line) - 1] = '\0';
             }
 
-
-//             for (int i = 0; i < MAX_NAMES; i++){
-//                 //if name found, increment the name count accordingly in the array
-//                 if (strcmp (current_line, temp_countnames[i].name) == 0 && empty_line_found == 0){
-//                     temp_countnames[i].count++;
-//                     name_found = 1;
-//                 }
-//             }
+            pthread_mutex_lock(&tlock3); // critical section starts
 
             int i = 0;
             //check if current name is found or not
-            while(i < MAX_NAMES && curr_node = curr_node->next != NULL){
+            while(i < MAX_NAMES && (curr_node = curr_node->next) != NULL){
                 //compare the strings
                 if(strcmp(current_line, curr_node->name_count.name) == 0){
                     curr_node->name_count.count++;
@@ -291,27 +311,63 @@ void* thread_runner(void* file)
                 i++;
             }
 
-            //if name is not found and line not empty, add new name in array
+            pthread_mutex_unlock(&tlock3); // critical section ends
+
+            //if name is not found and line not empty, add new name in list
             if (name_found == 0 && j < 100 && empty_line_found == 0){
-                    strcpy(curr_node->name_count.name, current_line);
-                    curr_node->name_count.count++;
+                    pthread_mutex_lock(&tlock3);
+
+                    add_node(HEAD_NODE, current_line);
+
+                    pthread_mutex_unlock(&tlock3);
+
                     j++;
             }
             empty_line_found = 0; //reset to false
             name_found = 0; //reset boolean to false
             line_count++; //increment line
 
+        }
+
+        //close file
+        fclose(names_file);
     }
 
-    //close file
-    fclose(names_file);
+    pthread_mutex_lock(&tlock2);
+    if (p!=NULL && p->creator==me) {
+        pthread_mutex_unlock(&tlock2);
 
-    // TODO critical section ends
-    pthread_mutex_unlock(&tlock3);
+        pthread_mutex_lock(&tlock1); //critical section starts
+        log_index++;
 
+        printf("Logindex %d, thread %ld, PID %d, ", log_index,me, (int) getpid());
+        timer();
+        printf(": This is thread %ld and I delete THREADDATA\n", me);
+
+        pthread_mutex_unlock(&tlock1); //critical section ends
+
+        pthread_mutex_lock(&tlock2);
+
+        free((void*) p); //free p
+        p = NULL;
+
+        pthread_mutex_unlock(&tlock2);
+
+    } else {
+        pthread_mutex_unlock(&tlock2);
+        pthread_mutex_lock(&tlock1); //critical section ends
+        log_index++;
+
+        printf("Logindex %d, thread %ld, PID %d, ", log_index,me, (int) getpid());
+        timer();
+        printf(": This is thread %ld and I can access the THREADDATA\n",me);
+
+        pthread_mutex_unlock(&tlock1); //critical section ends
+
+    }
     pthread_exit(NULL);
 
-    //return NULL;
+    return NULL;
 }//end thread_runner
 
 
